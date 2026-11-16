@@ -32,4 +32,4 @@ jobs:
         if: env.SKIP != '1'
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_ID"
-          supabase db push --remote
+          supabase db push --remote --yes

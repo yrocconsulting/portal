@@ -1,0 +1,117 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requireStaff } from "@/lib/auth";
+import { cleanDomain, str } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+import { CLIENT_STATUSES } from "@/lib/types";
+
+type State = { error?: string; ok?: number };
+
+function clientFields(fd: FormData) {
+  const status = str(fd, "status");
+  const whiteLabel = fd.get("white_label") === "on";
+  return {
+    name: str(fd, "name") ?? "",
+    domain: cleanDomain(str(fd, "domain")),
+    status: status && (CLIENT_STATUSES as readonly string[]).includes(status) ? status : "active",
+    white_label: whiteLabel,
+    partner: whiteLabel ? str(fd, "partner") : null,
+    services: fd.getAll("services").filter((v): v is string => typeof v === "string" && v !== ""),
+    city: str(fd, "city"),
+    phone: str(fd, "phone"),
+    website: str(fd, "website"),
+    notes: str(fd, "notes"),
+  };
+}
+
+function friendly(msg: string): string {
+  return msg.includes("clients_domain_key") ? "Another client already uses that domain." : msg;
+}
+
+export async function createClientRecord(_prev: State, fd: FormData): Promise<State> {
+  await requireStaff();
+  const fields = clientFields(fd);
+  if (!fields.name) return { error: "Client name is required." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("clients").insert(fields).select("id").single();
+  if (error) return { error: friendly(error.message) };
+
+  const contactName = str(fd, "contact_name");
+  if (contactName) {
+    await supabase.from("contacts").insert({
+      client_id: data.id,
+      name: contactName,
+      email: str(fd, "contact_email")?.toLowerCase() ?? null,
+      phone: str(fd, "contact_phone"),
+      title: str(fd, "contact_title"),
+      is_primary: true,
+    });
+  }
+  revalidatePath("/clients");
+  redirect(`/clients/${data.id}`);
+}
+
+export async function updateClientRecord(_prev: State, fd: FormData): Promise<State> {
+  await requireStaff();
+  const id = str(fd, "id");
+  const fields = clientFields(fd);
+  if (!id || !fields.name) return { error: "Client name is required." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("clients").update(fields).eq("id", id);
+  if (error) return { error: friendly(error.message) };
+  revalidatePath("/", "layout");
+  return { ok: Date.now() };
+}
+
+export async function addContact(_prev: State, fd: FormData): Promise<State> {
+  await requireStaff();
+  const clientId = str(fd, "client_id");
+  const name = str(fd, "name");
+  if (!clientId || !name) return { error: "Contact name is required." };
+  const supabase = await createClient();
+  const isPrimary = fd.get("is_primary") === "on";
+  if (isPrimary) await supabase.from("contacts").update({ is_primary: false }).eq("client_id", clientId);
+  const { error } = await supabase.from("contacts").insert({
+    client_id: clientId,
+    name,
+    email: str(fd, "email")?.toLowerCase() ?? null,
+    phone: str(fd, "phone"),
+    title: str(fd, "title"),
+    is_primary: isPrimary,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/clients/${clientId}`);
+  return { ok: Date.now() };
+}
+
+export async function deleteContact(id: string, clientId: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  await supabase.from("contacts").delete().eq("id", id);
+  revalidatePath(`/clients/${clientId}`);
+}
+
+export async function startOnboarding(_prev: State, fd: FormData): Promise<State> {
+  await requireStaff();
+  const clientId = str(fd, "client_id");
+  const templateId = str(fd, "template_id");
+  if (!clientId || !templateId) return { error: "Choose a checklist." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("start_onboarding", { p_client: clientId, p_template: templateId, p_assignee: str(fd, "assignee_id") });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: Number(data) || 0 };
+}
+
+export async function deleteClientRecord(fd: FormData) {
+  const me = await requireStaff();
+  if (me.role !== "admin") throw new Error("Only admins can delete clients");
+  const id = str(fd, "id");
+  if (!id) return;
+  const supabase = await createClient();
+  await supabase.from("clients").delete().eq("id", id);
+  revalidatePath("/", "layout");
+  redirect("/clients");
+}

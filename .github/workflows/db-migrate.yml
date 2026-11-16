@@ -27,9 +27,9 @@ jobs:
       - uses: supabase/setup-cli@v1
         if: env.SKIP != '1'
         with:
-          version: latest
+          version: 3.2.0
       - name: Apply migrations
         if: env.SKIP != '1'
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_ID"
-          supabase db push
+          supabase db push --remote

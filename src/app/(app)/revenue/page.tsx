@@ -48,7 +48,7 @@ export default async function RevenuePage() {
   const prev = (months ?? [])[1];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Revenue</h1>
         <p className="mt-1 text-sm text-muted">

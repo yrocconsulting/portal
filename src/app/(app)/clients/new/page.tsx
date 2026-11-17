@@ -13,7 +13,7 @@ export default async function NewClientPage() {
     supabase.from("staff").select("id, full_name, email").eq("active", true).order("full_name"),
   ]);
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <h1 className="text-2xl font-bold">New client</h1>
       <div className="card p-6">
         <ClientForm isAdmin={me.role === "admin"} packages={packages ?? []} staff={(staff ?? []).map((s) => ({ id: s.id, name: staffName(s) }))} />

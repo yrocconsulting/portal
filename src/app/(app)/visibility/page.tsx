@@ -17,7 +17,7 @@ export default async function VisibilityPage() {
 
   if (!latest) {
     return (
-      <div className="mx-auto max-w-4xl space-y-4">
+      <div className="mx-auto max-w-[1440px] space-y-4">
         <h1 className="text-2xl font-bold">AI visibility</h1>
         <p className="card p-6 text-sm text-muted">
           No ProRankTracker report has arrived yet. Results come in every Monday afternoon from the weekly report in Google Drive.

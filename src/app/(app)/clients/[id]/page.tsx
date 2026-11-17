@@ -73,7 +73,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
   ].filter(([, v]) => v) as [string, React.ReactNode][];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div className="text-sm text-muted">
         <Link href="/clients" className="hover:text-ink">
           Clients

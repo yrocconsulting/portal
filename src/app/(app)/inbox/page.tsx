@@ -46,7 +46,7 @@ export default async function InboxPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Inbox</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">

@@ -43,7 +43,7 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
   const changedSincePublish = !!r.published_at && !!r.content_changed_at && r.content_changed_at > r.published_at;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div className="text-sm text-muted">
         <Link href={`/reports?month=${month}`} className="hover:text-ink">
           Monthly reports

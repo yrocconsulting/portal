@@ -101,7 +101,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
   const activeStaff = (staff ?? []).filter((s) => s.active || s.id === t.assignee_id);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1440px]">
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
         <Link href="/tickets" className="hover:text-ink">
           Tickets

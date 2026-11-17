@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Import clients" };
 export default async function ImportClientsPage() {
   await requireAdmin();
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="mx-auto max-w-[1440px] space-y-5">
       <div className="text-sm text-muted">
         <Link href="/clients" className="hover:text-ink">
           Clients

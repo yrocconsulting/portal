@@ -17,7 +17,7 @@ export default async function EditStaffPage({ params }: PageProps<"/team/[id]">)
   if (!person) notFound();
   const urls = await avatarUrls([person.avatar_path]);
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5">
       <div className="text-sm text-muted">
         <Link href="/team" className="hover:text-ink">
           Team

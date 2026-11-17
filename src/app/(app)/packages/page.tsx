@@ -24,7 +24,7 @@ export default async function PackagesPage({ searchParams }: PageProps<"/package
   const clientsOn = (id: string) => (counts ?? []).filter((c) => c.package_id === id).length;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-[1440px] space-y-5">
       <div className="text-sm text-muted">
         <Link href="/reports" className="hover:text-ink">
           Monthly reports

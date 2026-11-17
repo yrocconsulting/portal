@@ -20,7 +20,7 @@ export default async function TeamPage() {
 
   const urls = await avatarUrls((staff ?? []).map((s) => s.avatar_path));
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Team</h1>
         <p className="mt-1 text-sm text-muted">Only invited email addresses can use the portal. Admins can invite people and delete tickets and clients.</p>

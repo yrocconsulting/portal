@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
 import { requireStaff } from "@/lib/auth";
 import { daysAgoISO, timeAgo } from "@/lib/format";
-import { gscConfig } from "@/lib/gsc/google";
+import { gscConfig, gscConfigProblem } from "@/lib/gsc/google";
 import { siteForClient } from "@/lib/gsc/match";
 import { createClient } from "@/lib/supabase/server";
 import { linkProperty } from "./actions";
@@ -58,7 +58,7 @@ export default async function SearchConsolePage() {
                 permissions, Add user, Restricted), then sync.
               </>
             ) : (
-              " Not connected yet: the GSC_SERVICE_ACCOUNT setting is missing in Vercel."
+              <span className="mt-2 block rounded-lg bg-amber-50 px-3 py-2 text-amber-800">Not connected yet: {gscConfigProblem()}</span>
             )}
           </p>
         </div>

@@ -8,6 +8,17 @@ import { createSign } from "node:crypto";
 
 type ServiceAccount = { client_email: string; private_key: string; token_uri?: string };
 
+/** Why the service account setting can't be used (for the Search Console page), or null when it's fine. */
+export function gscConfigProblem(): string | null {
+  const raw = process.env.GSC_SERVICE_ACCOUNT?.trim();
+  if (!raw) return "The GSC_SERVICE_ACCOUNT setting isn't set in Vercel (or the portal hasn't been redeployed since it was added).";
+  if (gscConfig()) return null;
+  const looksJson = raw.startsWith("{");
+  return looksJson
+    ? "GSC_SERVICE_ACCOUNT is set but isn't a complete service account key. Paste the entire contents of the downloaded .json file, from the first { to the last }."
+    : "GSC_SERVICE_ACCOUNT is set but doesn't look like the .json key file. Paste the file's entire contents, starting with {.";
+}
+
 export function gscConfig(): { sa: ServiceAccount; apiBase: string; tokenUrl: string } | null {
   const raw = process.env.GSC_SERVICE_ACCOUNT?.trim();
   if (!raw) return null;

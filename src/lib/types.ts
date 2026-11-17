@@ -54,6 +54,9 @@ export type Staff = {
   full_name: string | null;
   role: "admin" | "member";
   active: boolean;
+  job_title: string | null;
+  phone: string | null;
+  avatar_path: string | null;
 };
 
 export type Client = {

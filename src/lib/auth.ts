@@ -10,12 +10,12 @@ export const requireStaff = cache(async (): Promise<Staff> => {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) redirect("/login");
 
-  let { data: me } = await supabase.from("staff").select("id, email, full_name, role, active").eq("id", auth.user.id).maybeSingle();
+  let { data: me } = await supabase.from("staff").select("id, email, full_name, role, active, job_title, phone, avatar_path").eq("id", auth.user.id).maybeSingle();
   if (!me) {
     // Invited after their first sign in: claim the invite now.
     const { data: claimed } = await supabase.rpc("claim_invite");
     if (claimed) {
-      ({ data: me } = await supabase.from("staff").select("id, email, full_name, role, active").eq("id", auth.user.id).maybeSingle());
+      ({ data: me } = await supabase.from("staff").select("id, email, full_name, role, active, job_title, phone, avatar_path").eq("id", auth.user.id).maybeSingle());
     }
   }
   if (!me || !me.active) redirect("/no-access");

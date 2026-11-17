@@ -14,6 +14,9 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   White-label clients must never be named on the website or used as case studies.
 - **Onboarding:** checklists whose steps become tickets for a client, due N days after the start.
 - **Team:** admins invite people by email and set roles. Members can't delete tickets or clients.
+- **Profiles:** everyone sets their name, job title, phone and photo under **My profile** (click your
+  name in the sidebar); admins can edit anyone's from **Team**. Photos live in the private `avatars`
+  bucket and are shown with short-lived signed links.
 
 - **Email intake:** staff forward client emails to the helpdesk mailbox. The portal reads the original
   sender from the forward, links the client (by contact email, then by domain, creating the contact),

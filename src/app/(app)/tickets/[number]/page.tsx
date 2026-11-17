@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
 import { ConfirmButton } from "@/components/confirm-button";
+import { Avatar } from "@/components/avatar";
 import { requireStaff, staffName } from "@/lib/auth";
+import { avatarUrls } from "@/lib/avatars";
 import { fmtDate, fmtDateTime, isOverdue, timeAgo } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -48,7 +50,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
     supabase.from("ticket_comments").select("*").eq("ticket_id", t.id).order("created_at"),
     supabase.from("ticket_events").select("*").eq("ticket_id", t.id).order("created_at"),
     supabase.from("attachments").select("*").eq("ticket_id", t.id).order("created_at"),
-    supabase.from("staff").select("id, full_name, email, active").order("full_name"),
+    supabase.from("staff").select("id, full_name, email, active, avatar_path, job_title").order("full_name"),
     supabase.from("clients").select("id, name").order("name"),
     t.client_id ? supabase.from("clients").select("id, name, white_label, partner, domain").eq("id", t.client_id).single() : Promise.resolve({ data: null }),
     t.contact_id ? supabase.from("contacts").select("name, email, phone").eq("id", t.contact_id).single() : Promise.resolve({ data: null }),
@@ -61,6 +63,11 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
   const urlFor = (p: string) => signed.find((s) => s.path === p)?.signedUrl ?? null;
 
   const people = new Map((staff ?? []).map((s) => [s.id, staffName(s)]));
+  const photos = await avatarUrls((staff ?? []).map((s) => s.avatar_path));
+  const photoOf = (id: string | null) => {
+    const p = (staff ?? []).find((s) => s.id === id)?.avatar_path;
+    return p ? photos[p] ?? null : null;
+  };
   const clientName = new Map((clients ?? []).map((c) => [c.id, c.name]));
   const who = (id: string | null) => (id ? people.get(id) ?? "Someone" : "System");
 
@@ -128,7 +135,8 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
                 ) : (
                   <li key={it.c.id} className={`card p-4 ${it.c.author_kind === "claude" ? "border-green/50" : it.c.author_kind === "email" ? "border-l-4 border-l-steel" : ""}`}>
                     <div className="mb-2 flex items-center justify-between gap-3 text-xs">
-                      <span className="font-semibold">
+                      <span className="flex items-center gap-2 font-semibold">
+                        {it.c.author_kind === "staff" && <Avatar name={who(it.c.author_id)} url={photoOf(it.c.author_id)} size={24} />}
                         {it.c.author_kind === "staff" ? who(it.c.author_id) : it.c.author_kind === "claude" ? "Claude" : it.c.author_name ?? "Client"}
                         {it.c.author_kind === "email" && (
                           <span className="ml-2 font-normal text-muted">

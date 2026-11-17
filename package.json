@@ -14,7 +14,8 @@
     "test:unit": "node --experimental-strip-types --test tests/*.test.ts",
     "test:e2e:email": "node tests/e2e-email.cjs",
     "test:e2e:clients": "node tests/e2e-clients.cjs",
-    "test:e2e:visibility": "node tests/e2e-visibility.cjs"
+    "test:e2e:visibility": "node tests/e2e-visibility.cjs",
+    "test:e2e:profiles": "node tests/e2e-profiles.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

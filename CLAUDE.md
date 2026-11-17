@@ -35,6 +35,9 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - Client logins: `client_credentials.password_enc` is encrypted in the app (`src/lib/crypto.ts`,
   key `CREDENTIALS_KEY`). Never select `password_enc` into anything sent to the browser; reveal goes
   through `revealPassword()`, which logs to `credential_views`. The sheet import never reads logins.
+- Profiles: people change their own details only through `update_my_profile()` (can't touch role or
+  access); admins update `staff` directly. Photos: private `avatars` bucket, folder per person,
+  displayed via `avatarUrls()` (signed links).
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

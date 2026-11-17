@@ -12,6 +12,8 @@ import { fmtDate, fmtDateTime } from "@/lib/format";
 import { CLIENT_STATUS_LABEL, LINK_FIELDS, OPEN_STATUSES, type Client, type Contact, type Credential, type TicketRow } from "@/lib/types";
 import { deleteClientRecord, setArchived } from "../actions";
 import { ClientForm } from "../client-form";
+import { AiVisibility } from "@/components/ai-visibility";
+import { trackedDomain } from "@/lib/visibility";
 import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
 
@@ -100,6 +102,8 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
             <TicketTable tickets={(tickets ?? []) as TicketRow[]} hideClient empty="No open tickets for this client." />
           </section>
 
+
+          <AiVisibility domain={trackedDomain(c)} clientId={c.id} />
 
           {(details.length > 0 || c.website || c.drive_url || links.length > 0) && (
             <section className="card p-4">

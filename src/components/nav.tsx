@@ -10,6 +10,7 @@ const I = {
   ticket: <path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4zM13 5v14" />,
   clients: <path d="M3 21V7l9-4 9 4v14M9 21v-6h6v6M7 10h.01M12 10h.01M17 10h.01" />,
   inbox: <path d="M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />,
+  visibility: <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />,
   onboarding: <path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" />,
   team: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
 };
@@ -28,6 +29,7 @@ export function Nav({ isAdmin }: { isAdmin: boolean }) {
     { href: "/", label: "Dashboard", icon: <Icon d={I.home} /> },
     { href: "/tickets", label: "Tickets", icon: <Icon d={I.ticket} /> },
     { href: "/clients", label: "Clients", icon: <Icon d={I.clients} /> },
+    { href: "/visibility", label: "AI visibility", icon: <Icon d={I.visibility} /> },
     { href: "/inbox", label: "Inbox", icon: <Icon d={I.inbox} /> },
     { href: "/onboarding", label: "Onboarding", icon: <Icon d={I.onboarding} /> },
     ...(isAdmin ? [{ href: "/team", label: "Team", icon: <Icon d={I.team} /> }] : []),

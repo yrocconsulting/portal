@@ -30,6 +30,7 @@ function clientFields(fd: FormData) {
     drive_url: str(fd, "drive_url"),
     locations: str(fd, "locations"),
     start_date: str(fd, "start_date"),
+    tracking_domain: cleanDomain(str(fd, "tracking_domain")),
     links: Object.fromEntries(
       LINK_FIELDS.map(([k]) => [k, str(fd, `link_${k}`)]).filter((e): e is [string, string] => !!e[1] && /^https?:\/\//i.test(e[1])),
     ),

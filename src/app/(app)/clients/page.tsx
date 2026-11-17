@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { trackedDomain } from "@/lib/visibility";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, OPEN_STATUSES, type Client } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Clients" };
@@ -21,7 +22,15 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
     const safe = q.replace(/[%,()]/g, " ");
     query = query.or(`name.ilike.%${safe}%,domain.ilike.%${safe}%,city.ilike.%${safe}%,industry.ilike.%${safe}%`);
   }
-  const [{ data: clients }, { data: open }] = await Promise.all([query, supabase.from("tickets").select("client_id").in("status", OPEN_STATUSES).not("client_id", "is", null)]);
+  const [{ data: clients }, { data: open }, { data: latest }] = await Promise.all([
+    query,
+    supabase.from("tickets").select("client_id").in("status", OPEN_STATUSES).not("client_id", "is", null),
+    supabase.from("prt_reports").select("report_date").order("report_date", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const { data: vis } = latest
+    ? await supabase.from("prt_site_results").select("domain, visibility").eq("report_date", latest.report_date)
+    : { data: [] as { domain: string; visibility: number }[] };
+  const visBy = new Map((vis ?? []).map((v) => [v.domain, v.visibility]));
 
   const openBy = new Map<string, number>();
   (open ?? []).forEach((t) => openBy.set(t.client_id as string, (openBy.get(t.client_id as string) ?? 0) + 1));
@@ -66,6 +75,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                 <th className="px-4 py-2.5">Industry</th>
                 <th className="px-4 py-2.5">Status</th>
                 <th className="px-4 py-2.5">Services</th>
+                <th className="whitespace-nowrap px-4 py-2.5 text-right">AI visibility</th>
                 <th className="whitespace-nowrap px-4 py-2.5 text-right">Open tickets</th>
               </tr>
             </thead>
@@ -83,6 +93,12 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                   <td className="px-4 py-3">{CLIENT_STATUS_LABEL[c.status]}</td>
                   <td className="max-w-xs truncate px-4 py-3 text-muted" title={c.services.join(", ")}>
                     {c.services.join(", ")}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {(() => {
+                      const v = visBy.get(trackedDomain(c) ?? "");
+                      return v === undefined ? <span className="text-muted/50">none</span> : <Link href={`/clients/${c.id}#ai-visibility`} className="hover:text-green-d">{v}%</Link>;
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">{openBy.get(c.id) ?? 0}</td>
                 </tr>

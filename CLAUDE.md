@@ -24,8 +24,11 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   page depends on the signed-in user. Read `node_modules/next/dist/docs/` before using a new API.
 - Auth: `src/lib/auth.ts` `requireStaff()` / `requireAdmin()` at the top of every page and server
   action. Access is enforced again in Postgres by RLS (`public.is_staff()`). The secret key client
-  (`src/lib/supabase/admin.ts`) is only for the email intake jobs in `src/lib/email/` and
-  `/api/email/*`, which have no signed-in user and check their own secret.
+  (`src/lib/supabase/admin.ts`) is only for machine endpoints with no signed-in user that check their
+  own secret: the email intake (`src/lib/email/`, `/api/email/*`) and `/api/prt/ingest`.
+- AI visibility: the website repo's Monday `ai-stats` job posts full ProRankTracker results to
+  `/api/prt/ingest` (secret `PRT_INGEST_SECRET` here, `PORTAL_INGEST_SECRET` there). Results are stored
+  by domain and joined to clients via `tracking_domain ?? domain` at read time.
 - Email intake: staff forward client mail to the helpdesk mailbox (clients keep emailing their account
   manager; nobody's personal mailbox is read). `src/lib/email/parse.ts` (pure, unit tested) reads the
   forward; `process.ts` files it. Only active staff senders create tickets; others go to Inbox review.

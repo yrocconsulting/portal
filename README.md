@@ -29,8 +29,12 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
 - **Client logins:** website, hosting, registrar and other logins per client. Passwords are encrypted
   with `CREDENTIALS_KEY` (AES-256-GCM), hidden until **Reveal**, and every view or change is logged.
 
-Coming next: ProRankTracker weekly results per client, and Claude-assisted tasks (drafts that a
-person approves).
+- **AI visibility:** each Monday the website repo's `ai-stats` job reads the ProRankTracker PDF and
+  posts every tracked domain and prompt to `/api/prt/ingest`. Client pages show the latest week,
+  platform split, weekly trend and every prompt; **AI visibility** lists all tracked sites and links
+  any domain that isn't matched to a client (sets `tracking_domain`).
+
+Coming next: Claude-assisted tasks (drafts that a person approves).
 
 ## Local development
 

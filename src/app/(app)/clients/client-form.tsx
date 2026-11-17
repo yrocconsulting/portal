@@ -23,7 +23,14 @@ export function ClientForm({ client }: { client?: Client }) {
             Domain
           </label>
           <input id="domain" name="domain" defaultValue={client?.domain ?? ""} placeholder="example.com" className="field" />
-          <p className="mt-1 text-xs text-muted">Used to match incoming email and weekly AI visibility reports.</p>
+          <p className="mt-1 text-xs text-muted">Used to match forwarded emails and weekly AI visibility results.</p>
+        </div>
+        <div>
+          <label className="label" htmlFor="tracking_domain">
+            Tracked domain (if different)
+          </label>
+          <input id="tracking_domain" name="tracking_domain" defaultValue={client?.tracking_domain ?? ""} placeholder="Domain used in ProRankTracker" className="field" />
+          <p className="mt-1 text-xs text-muted">Only needed when ProRankTracker tracks a different domain than the website.</p>
         </div>
         <div>
           <label className="label" htmlFor="status">

@@ -76,6 +76,7 @@ export type Client = {
   locations: string | null;
   start_date: string | null;
   links: Record<string, string>;
+  tracking_domain: string | null;
   created_at: string;
 };
 

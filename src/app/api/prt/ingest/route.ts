@@ -55,7 +55,12 @@ export async function POST(request: NextRequest) {
     .filter((x): x is NonNullable<typeof x> => !!x);
   if (!sites.length) return NextResponse.json({ error: "no sites in the report" }, { status: 400 });
 
-  const db = createAdminClient();
+  let db: ReturnType<typeof createAdminClient>;
+  try {
+    db = createAdminClient();
+  } catch (e) {
+    return NextResponse.json({ error: `Portal setting missing: ${(e as Error).message}` }, { status: 500 });
+  }
   // Replace the week: deleting the report row cascades to its results.
   await db.from("prt_reports").delete().eq("report_date", date);
   const { error: e1 } = await db.from("prt_reports").insert({ report_date: date, site_count: sites.length, prompt_count: prompts.length });

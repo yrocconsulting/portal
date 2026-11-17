@@ -22,7 +22,7 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   sender from the forward, links the client (by contact email, then by domain, creating the contact),
   attaches files and emails the forwarder a confirmation from no-reply. `#1042` in the subject adds the
   email to that ticket instead. Mail from anyone who isn't staff waits in **Inbox > Needs review**.
-  Microsoft notifies `/api/email/webhook` as mail arrives; `/api/email/cron` (daily, `vercel.json`)
+  Microsoft notifies `/api/email/webhook` as mail arrives; `/api/cron/daily` (`vercel.json`)
   renews that subscription and catches up. Staff can also log a client call or email on any ticket.
 
 - **Client records:** contact, address, industry, package, payment method, start date, locations,
@@ -36,6 +36,12 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   posts every tracked domain and prompt to `/api/prt/ingest`. Client pages show the latest week,
   platform split, weekly trend and every prompt; **AI visibility** lists all tracked sites and links
   any domain that isn't matched to a client (sets `tracking_domain`).
+
+- **Google Search:** a read-only Google service account (`GSC_SERVICE_ACCOUNT`) syncs every Search
+  Console property shared with it, daily via `/api/cron/daily` (16 months on the first run, then the
+  last 10 days) or with **Sync now**. Client pages show 28-day clicks, impressions, CTR and position
+  against the previous 28 days, a 90-day chart, and top queries and pages. **Search Console** lists
+  all properties and links any that don't match a client by domain (`clients.gsc_site_url`).
 
 Coming next: Claude-assisted tasks (drafts that a person approves).
 

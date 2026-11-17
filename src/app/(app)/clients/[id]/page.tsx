@@ -13,6 +13,7 @@ import { CLIENT_STATUS_LABEL, LINK_FIELDS, OPEN_STATUSES, type Client, type Cont
 import { deleteClientRecord, setArchived } from "../actions";
 import { ClientForm } from "../client-form";
 import { AiVisibility } from "@/components/ai-visibility";
+import { SearchConsole } from "@/components/search-console";
 import { trackedDomain } from "@/lib/visibility";
 import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
@@ -104,6 +105,8 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
 
 
           <AiVisibility domain={trackedDomain(c)} clientId={c.id} />
+
+          <SearchConsole client={c} />
 
           {(details.length > 0 || c.website || c.drive_url || links.length > 0) && (
             <section className="card p-4">

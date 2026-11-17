@@ -80,6 +80,7 @@ export type Client = {
   start_date: string | null;
   links: Record<string, string>;
   tracking_domain: string | null;
+  gsc_site_url: string | null;
   created_at: string;
 };
 

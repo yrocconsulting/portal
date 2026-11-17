@@ -25,7 +25,10 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - Auth: `src/lib/auth.ts` `requireStaff()` / `requireAdmin()` at the top of every page and server
   action. Access is enforced again in Postgres by RLS (`public.is_staff()`). The secret key client
   (`src/lib/supabase/admin.ts`) is only for machine endpoints with no signed-in user that check their
-  own secret: the email intake (`src/lib/email/`, `/api/email/*`) and `/api/prt/ingest`.
+  own secret: the email intake (`src/lib/email/`, `/api/email/*`), `/api/prt/ingest`, the daily
+  `/api/cron/daily`, and the Search Console sync (`src/lib/gsc/`, also run by admins via Sync now).
+- Google Search Console: service account JWT auth in `src/lib/gsc/google.ts` (no Google SDK),
+  stored per property in `gsc_*` tables and matched to clients via `gsc_site_url ?? domain`.
 - AI visibility: the website repo's Monday `ai-stats` job posts full ProRankTracker results to
   `/api/prt/ingest` (secret `PRT_INGEST_SECRET` here, `PORTAL_INGEST_SECRET` there). Results are stored
   by domain and joined to clients via `tracking_domain ?? domain` at read time.

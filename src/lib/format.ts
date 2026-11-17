@@ -54,3 +54,8 @@ export function cleanDomain(v: string | null): string | null {
   if (!v) return null;
   return v.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "").trim() || null;
 }
+
+/** YYYY-MM-DD for n days ago (UTC). */
+export function daysAgoISO(n: number): string {
+  return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+}

@@ -36,6 +36,8 @@ export const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
 /** Services Yroc sells (matches the website's service catalog). */
 export const SERVICES = [
   "AI Search Optimization",
+  "SEO",
+  "Facebook Ads",
   "AI Visibility Audit",
   "Entity Optimization",
   "Schema & Structured Data",
@@ -66,7 +68,47 @@ export type Client = {
   phone: string | null;
   website: string | null;
   notes: string | null;
+  address: string | null;
+  industry: string | null;
+  package: string | null;
+  payment_method: string | null;
+  drive_url: string | null;
+  locations: string | null;
+  start_date: string | null;
+  links: Record<string, string>;
   created_at: string;
+};
+
+export const LINK_FIELDS = [
+  ["gbp", "Google Business Profile"],
+  ["facebook", "Facebook"],
+  ["instagram", "Instagram"],
+  ["youtube", "YouTube"],
+  ["linkedin", "LinkedIn"],
+  ["x", "X"],
+  ["tiktok", "TikTok"],
+  ["yelp", "Yelp"],
+] as const;
+
+export const CREDENTIAL_KINDS = [
+  ["website", "Website login"],
+  ["hosting", "Hosting"],
+  ["registrar", "Domain registrar"],
+  ["google", "Google account"],
+  ["social", "Social media"],
+  ["other", "Other"],
+] as const;
+
+export type Credential = {
+  id: string;
+  client_id: string;
+  kind: string;
+  label: string | null;
+  url: string | null;
+  username: string | null;
+  has_password: boolean;
+  notes: string | null;
+  updated_at: string;
 };
 
 export type Contact = {

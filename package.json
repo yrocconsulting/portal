@@ -12,11 +12,13 @@
     "db:reset": "supabase db reset",
     "test:e2e": "node tests/e2e.cjs",
     "test:unit": "node --experimental-strip-types --test tests/*.test.ts",
-    "test:e2e:email": "node tests/e2e-email.cjs"
+    "test:e2e:email": "node tests/e2e-email.cjs",
+    "test:e2e:clients": "node tests/e2e-clients.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
+    "exceljs": "^4.4.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -32,5 +34,8 @@
     "supabase": "^3.2.0",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

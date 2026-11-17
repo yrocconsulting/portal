@@ -7,9 +7,12 @@ import { TicketTable } from "@/components/ticket-table";
 import { requireStaff, staffName } from "@/lib/auth";
 import { TICKET_ROW } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { CLIENT_STATUS_LABEL, OPEN_STATUSES, type Client, type Contact, type TicketRow } from "@/lib/types";
+import { credentialsReady } from "@/lib/crypto";
+import { fmtDate, fmtDateTime } from "@/lib/format";
+import { CLIENT_STATUS_LABEL, LINK_FIELDS, OPEN_STATUSES, type Client, type Contact, type Credential, type TicketRow } from "@/lib/types";
 import { deleteClientRecord } from "../actions";
 import { ClientForm } from "../client-form";
+import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
 
 export async function generateMetadata({ params }: PageProps<"/clients/[id]">): Promise<Metadata> {
@@ -33,12 +36,33 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
   let tq = supabase.from("tickets").select(TICKET_ROW).eq("client_id", id).order("updated_at", { ascending: false }).limit(100);
   if (!showAll) tq = tq.in("status", OPEN_STATUSES);
 
-  const [{ data: tickets }, { data: contacts }, { data: templates }, { data: staff }] = await Promise.all([
+  const [{ data: tickets }, { data: contacts }, { data: templates }, { data: staff }, { data: credRows }, { data: views }] = await Promise.all([
     tq,
     supabase.from("contacts").select("*").eq("client_id", id).order("is_primary", { ascending: false }).order("name"),
     supabase.from("onboarding_templates").select("id, name, onboarding_steps(count)").order("name"),
     supabase.from("staff").select("id, full_name, email").eq("active", true).order("full_name"),
+    supabase.from("client_credentials").select("id, client_id, kind, label, url, username, notes, updated_at, password_enc").eq("client_id", id).order("kind"),
+    supabase.from("credential_views").select("action, created_at, staff:staff(full_name, email), credential:client_credentials(label, kind)").eq("client_id", id).order("created_at", { ascending: false }).limit(15),
   ]);
+
+  // Never send encrypted passwords to the browser: only whether one exists.
+  const creds: Credential[] = (credRows ?? []).map(({ password_enc, ...r }) => ({ ...r, has_password: !!password_enc }));
+  const log = (views ?? []).map((v) => {
+    const who = staffName(v.staff as unknown as { full_name: string | null; email: string } | null);
+    const what = (v.credential as unknown as { label: string | null; kind: string } | null)?.label ?? "a login";
+    const verb = { reveal: "viewed the password for", create: "added", update: "changed", delete: "deleted" }[v.action as string] ?? v.action;
+    return `${fmtDateTime(v.created_at)}: ${who} ${verb} ${what}`;
+  });
+  const links = LINK_FIELDS.filter(([k]) => c.links?.[k]);
+  const details: [string, React.ReactNode][] = [
+    ["Industry", c.industry],
+    ["Package", c.package],
+    ["Start date", c.start_date ? fmtDate(c.start_date) : null],
+    ["Payment", c.payment_method],
+    ["Phone", c.phone],
+    ["Address", c.address],
+    ["Locations", c.locations],
+  ].filter(([, v]) => v) as [string, React.ReactNode][];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -74,6 +98,37 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
             </header>
             <TicketTable tickets={(tickets ?? []) as TicketRow[]} hideClient empty="No open tickets for this client." />
           </section>
+
+
+          {(details.length > 0 || c.website || c.drive_url || links.length > 0) && (
+            <section className="card p-4">
+              <div className="mb-3 flex flex-wrap gap-2">
+                {c.website && (
+                  <a href={c.website} target="_blank" rel="noreferrer" className="btn-ghost py-1 text-xs">
+                    Website
+                  </a>
+                )}
+                {c.drive_url && (
+                  <a href={c.drive_url} target="_blank" rel="noreferrer" className="btn-ghost py-1 text-xs">
+                    Google Drive
+                  </a>
+                )}
+                {links.map(([k, label]) => (
+                  <a key={k} href={c.links[k]} target="_blank" rel="noreferrer" className="btn-ghost py-1 text-xs">
+                    {label}
+                  </a>
+                ))}
+              </div>
+              <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                {details.map(([k, v]) => (
+                  <div key={k} className={k === "Locations" || k === "Address" ? "sm:col-span-2" : ""}>
+                    <dt className="text-xs font-semibold tracking-wide text-muted uppercase">{k}</dt>
+                    <dd className="whitespace-pre-wrap">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
           <details className="card group" open={false}>
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-semibold">
@@ -122,6 +177,8 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
             )}
             <AddContactForm clientId={c.id} />
           </section>
+
+          <Credentials clientId={c.id} creds={creds} ready={credentialsReady()} log={log} />
 
           <section className="card p-4">
             <h2 className="mb-1 font-semibold">Onboarding</h2>

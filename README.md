@@ -22,8 +22,15 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   Microsoft notifies `/api/email/webhook` as mail arrives; `/api/email/cron` (daily, `vercel.json`)
   renews that subscription and catches up. Staff can also log a client call or email on any ticket.
 
-Coming next: client import from the client sheet, ProRankTracker weekly results per client, and
-Claude-assisted tasks (drafts that a person approves).
+- **Client records:** contact, address, industry, package, payment method, start date, locations,
+  Drive folder and online profiles. **Import from sheet** (admins) reads the client workbook (.xlsx):
+  one tab per client, labels in column A, values in column B; tabs after "Past Clients" are former
+  clients. Logins in the sheet are never imported. Re-running updates instead of duplicating.
+- **Client logins:** website, hosting, registrar and other logins per client. Passwords are encrypted
+  with `CREDENTIALS_KEY` (AES-256-GCM), hidden until **Reveal**, and every view or change is logged.
+
+Coming next: ProRankTracker weekly results per client, and Claude-assisted tasks (drafts that a
+person approves).
 
 ## Local development
 

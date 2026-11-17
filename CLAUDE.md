@@ -27,6 +27,9 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - Email intake: staff forward client mail to the helpdesk mailbox (clients keep emailing their account
   manager; nobody's personal mailbox is read). `src/lib/email/parse.ts` (pure, unit tested) reads the
   forward; `process.ts` files it. Only active staff senders create tickets; others go to Inbox review.
+- Client logins: `client_credentials.password_enc` is encrypted in the app (`src/lib/crypto.ts`,
+  key `CREDENTIALS_KEY`). Never select `password_enc` into anything sent to the browser; reveal goes
+  through `revealPassword()`, which logs to `credential_views`. The sheet import never reads logins.
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createClientRecord, updateClientRecord } from "./actions";
-import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, SERVICES, type Client } from "@/lib/types";
+import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, LINK_FIELDS, SERVICES, type Client } from "@/lib/types";
 
 export function ClientForm({ client }: { client?: Client }) {
   const [state, action, pending] = useActionState(client ? updateClientRecord : createClientRecord, {});
@@ -49,13 +49,64 @@ export function ClientForm({ client }: { client?: Client }) {
           </label>
           <input id="phone" name="phone" defaultValue={client?.phone ?? ""} className="field" />
         </div>
-        <div className="sm:col-span-2">
+        <div>
           <label className="label" htmlFor="website">
             Website
           </label>
           <input id="website" name="website" type="url" defaultValue={client?.website ?? ""} placeholder="https://" className="field" />
         </div>
+        <div>
+          <label className="label" htmlFor="industry">
+            Industry
+          </label>
+          <input id="industry" name="industry" defaultValue={client?.industry ?? ""} className="field" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="label" htmlFor="address">
+            Address
+          </label>
+          <input id="address" name="address" defaultValue={client?.address ?? ""} className="field" />
+        </div>
+        <div>
+          <label className="label" htmlFor="package">
+            Package
+          </label>
+          <input id="package" name="package" defaultValue={client?.package ?? ""} placeholder="What they pay for, as agreed" className="field" />
+        </div>
+        <div>
+          <label className="label" htmlFor="payment_method">
+            Payment method
+          </label>
+          <input id="payment_method" name="payment_method" defaultValue={client?.payment_method ?? ""} className="field" />
+        </div>
+        <div>
+          <label className="label" htmlFor="start_date">
+            Start date
+          </label>
+          <input id="start_date" name="start_date" type="date" defaultValue={client?.start_date ?? ""} className="field" />
+        </div>
+        <div>
+          <label className="label" htmlFor="drive_url">
+            Google Drive folder
+          </label>
+          <input id="drive_url" name="drive_url" type="url" defaultValue={client?.drive_url ?? ""} placeholder="https://drive.google.com/..." className="field" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="label" htmlFor="locations">
+            Locations
+          </label>
+          <textarea id="locations" name="locations" rows={2} defaultValue={client?.locations ?? ""} placeholder="One per line" className="field" />
+        </div>
       </div>
+
+      <fieldset>
+        <legend className="label">Online profiles</legend>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {LINK_FIELDS.map(([k, label]) => (
+            <input key={k} name={`link_${k}`} type="url" defaultValue={client?.links?.[k] ?? ""} placeholder={`${label} link`} className="field" />
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="rounded-lg border border-line p-4">
         <label className="flex items-start gap-3 text-sm">

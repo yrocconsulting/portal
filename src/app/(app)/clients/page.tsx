@@ -8,7 +8,7 @@ import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, OPEN_STATUSES, type Client } from
 export const metadata: Metadata = { title: "Clients" };
 
 export default async function ClientsPage({ searchParams }: PageProps<"/clients">) {
-  await requireStaff();
+  const me = await requireStaff();
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const status = typeof sp.status === "string" ? sp.status : "current";
@@ -19,7 +19,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
   else if (status !== "all") query = query.eq("status", status);
   if (q) {
     const safe = q.replace(/[%,()]/g, " ");
-    query = query.or(`name.ilike.%${safe}%,domain.ilike.%${safe}%,city.ilike.%${safe}%`);
+    query = query.or(`name.ilike.%${safe}%,domain.ilike.%${safe}%,city.ilike.%${safe}%,industry.ilike.%${safe}%`);
   }
   const [{ data: clients }, { data: open }] = await Promise.all([query, supabase.from("tickets").select("client_id").in("status", OPEN_STATUSES).not("client_id", "is", null)]);
 
@@ -30,9 +30,16 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Clients</h1>
-        <Link href="/clients/new" className="btn-green">
-          + New client
-        </Link>
+        <div className="flex gap-2">
+          {me.role === "admin" && (
+            <Link href="/clients/import" className="btn-ghost">
+              Import from sheet
+            </Link>
+          )}
+          <Link href="/clients/new" className="btn-green">
+            + New client
+          </Link>
+        </div>
       </div>
 
       <form className="card grid gap-3 p-3 sm:grid-cols-[2fr_1fr_auto]">
@@ -56,7 +63,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
               <tr className="border-b border-line text-left text-xs font-semibold tracking-wide text-muted uppercase">
                 <th className="px-4 py-2.5">Client</th>
                 <th className="px-4 py-2.5">Domain</th>
-                <th className="px-4 py-2.5">City</th>
+                <th className="px-4 py-2.5">Industry</th>
                 <th className="px-4 py-2.5">Status</th>
                 <th className="px-4 py-2.5">Services</th>
                 <th className="px-4 py-2.5 text-right">Open tickets</th>
@@ -72,7 +79,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-muted">{c.domain}</td>
-                  <td className="px-4 py-3 text-muted">{c.city}</td>
+                  <td className="px-4 py-3 text-muted">{c.industry ?? c.city}</td>
                   <td className="px-4 py-3">{CLIENT_STATUS_LABEL[c.status]}</td>
                   <td className="max-w-xs truncate px-4 py-3 text-muted" title={c.services.join(", ")}>
                     {c.services.join(", ")}

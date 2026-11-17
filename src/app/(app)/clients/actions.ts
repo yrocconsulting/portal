@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
 import { cleanDomain, str } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { CLIENT_STATUSES } from "@/lib/types";
+import { CLIENT_STATUSES, LINK_FIELDS } from "@/lib/types";
 
 type State = { error?: string; ok?: number };
 
@@ -23,6 +23,16 @@ function clientFields(fd: FormData) {
     phone: str(fd, "phone"),
     website: str(fd, "website"),
     notes: str(fd, "notes"),
+    address: str(fd, "address"),
+    industry: str(fd, "industry"),
+    package: str(fd, "package"),
+    payment_method: str(fd, "payment_method"),
+    drive_url: str(fd, "drive_url"),
+    locations: str(fd, "locations"),
+    start_date: str(fd, "start_date"),
+    links: Object.fromEntries(
+      LINK_FIELDS.map(([k]) => [k, str(fd, `link_${k}`)]).filter((e): e is [string, string] => !!e[1] && /^https?:\/\//i.test(e[1])),
+    ),
   };
 }
 

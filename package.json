@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:start": "supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,realtime",
     "db:reset": "supabase db reset",
-    "test:e2e": "node tests/e2e.cjs"
+    "test:e2e": "node tests/e2e.cjs",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:e2e:email": "node tests/e2e-email.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

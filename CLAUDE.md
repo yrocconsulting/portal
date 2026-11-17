@@ -21,8 +21,12 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   users to `/login`. `params`/`searchParams` are Promises. Cache Components are off on purpose: every
   page depends on the signed-in user. Read `node_modules/next/dist/docs/` before using a new API.
 - Auth: `src/lib/auth.ts` `requireStaff()` / `requireAdmin()` at the top of every page and server
-  action. Access is enforced again in Postgres by RLS (`public.is_staff()`), so never use the service
-  role key in request handlers.
+  action. Access is enforced again in Postgres by RLS (`public.is_staff()`). The secret key client
+  (`src/lib/supabase/admin.ts`) is only for the email intake jobs in `src/lib/email/` and
+  `/api/email/*`, which have no signed-in user and check their own secret.
+- Email intake: staff forward client mail to the helpdesk mailbox (clients keep emailing their account
+  manager; nobody's personal mailbox is read). `src/lib/email/parse.ts` (pure, unit tested) reads the
+  forward; `process.ts` files it. Only active staff senders create tickets; others go to Inbox review.
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

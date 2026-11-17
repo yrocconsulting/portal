@@ -15,8 +15,15 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
 - **Onboarding:** checklists whose steps become tickets for a client, due N days after the start.
 - **Team:** admins invite people by email and set roles. Members can't delete tickets or clients.
 
-Coming next: email to ticket (Microsoft 365 support inbox), Teams notifications, ProRankTracker weekly
-results per client, and Claude-assisted tasks (drafts that a person approves).
+- **Email intake:** staff forward client emails to the helpdesk mailbox. The portal reads the original
+  sender from the forward, links the client (by contact email, then by domain, creating the contact),
+  attaches files and emails the forwarder a confirmation from no-reply. `#1042` in the subject adds the
+  email to that ticket instead. Mail from anyone who isn't staff waits in **Inbox > Needs review**.
+  Microsoft notifies `/api/email/webhook` as mail arrives; `/api/email/cron` (daily, `vercel.json`)
+  renews that subscription and catches up. Staff can also log a client call or email on any ticket.
+
+Coming next: client import from the client sheet, ProRankTracker weekly results per client, and
+Claude-assisted tasks (drafts that a person approves).
 
 ## Local development
 
@@ -33,8 +40,10 @@ npm run dev
 Sign in at http://127.0.0.1:3000 with `admin@yroc.test` (or `member@yroc.test`) using the email link;
 local emails land in Mailpit at http://127.0.0.1:54324.
 
-Checks: `npm run typecheck`, `npm run lint`, `npm run build`. End-to-end test against a running app and
-a freshly reset local database: `npm run test:e2e`.
+Checks: `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run build`. End-to-end tests
+against a running app and a freshly reset local database: `npm run test:e2e`, then (with
+`node tests/mock-graph.cjs` running and the MS_* test settings from `tests/e2e-email.cjs` in
+`.env.local`) `npm run test:e2e:email`.
 
 ## Database
 

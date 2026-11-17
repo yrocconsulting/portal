@@ -119,17 +119,34 @@ export function TicketText({ id, title, description }: { id: string; title: stri
   );
 }
 
-export function CommentBox({ ticketId, status }: { ticketId: string; status: string }) {
+export function CommentBox({ ticketId, status, contactName }: { ticketId: string; status: string; contactName: string }) {
   const [state, action, pending] = useActionState(addComment, {});
+  const [fromClient, setFromClient] = useState(false);
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (state.n) ref.current?.reset();
+  }, [state.n]);
+  useEffect(() => {
+    if (state.n) setFromClient(false); // eslint-disable-line react-hooks/set-state-in-effect
   }, [state.n]);
   const closed = status === "done" || status === "closed";
   return (
     <form ref={ref} action={action} className="card p-3">
       <input type="hidden" name="ticket_id" value={ticketId} />
-      <textarea name="body" rows={3} required placeholder="Add an internal note..." className="field border-0 shadow-none focus:ring-0" />
+      <textarea
+        name="body"
+        rows={3}
+        required
+        placeholder={fromClient ? "What did the client say? (call, text or email)" : "Add an internal note..."}
+        className="field border-0 shadow-none focus:ring-0"
+      />
+      <div className="flex flex-wrap items-center gap-3 px-3 pb-2 text-sm text-muted">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="from_client" checked={fromClient} onChange={(e) => setFromClient(e.target.checked)} className="h-4 w-4 accent-ink" />
+          Log a message from the client
+        </label>
+        {fromClient && <input name="client_name" defaultValue={contactName} placeholder="Client name" className="field w-48 py-1" />}
+      </div>
       {state.error && <p className="px-3 text-sm text-red-700">{state.error}</p>}
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-3">
         {!closed && (

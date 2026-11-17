@@ -3,7 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requestOrigin } from "@/lib/origin";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
-const PUBLIC_PATHS = ["/login", "/auth/"];
+// /api/email/* is called by Microsoft and Vercel Cron and checks its own secret.
+const PUBLIC_PATHS = ["/login", "/auth/", "/api/email/"];
 
 /** Refreshes the Supabase session on every request and sends signed-out visitors to /login. */
 export async function proxy(request: NextRequest) {

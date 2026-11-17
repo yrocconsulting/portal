@@ -74,7 +74,16 @@ export async function addComment(_prev: { error?: string; n?: number }, fd: Form
   const body = str(fd, "body");
   if (!ticketId || !body) return { error: "Write something first." };
   const supabase = await createClient();
-  const { error } = await supabase.from("ticket_comments").insert({ ticket_id: ticketId, body, author_id: me.id, author_kind: "staff", internal: true });
+  // "From the client": a call or email logged by hand. Shown under the client's name, logged by me.
+  const fromClient = fd.get("from_client") === "on";
+  const { error } = await supabase.from("ticket_comments").insert({
+    ticket_id: ticketId,
+    body,
+    author_id: me.id,
+    author_kind: fromClient ? "email" : "staff",
+    author_name: fromClient ? str(fd, "client_name") ?? "Client" : null,
+    internal: true,
+  });
   if (error) return { error: error.message };
 
   // Optional status change in the same step ("Comment and mark done").

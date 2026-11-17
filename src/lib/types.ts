@@ -111,6 +111,7 @@ export type Comment = {
   author_name: string | null;
   body: string;
   internal: boolean;
+  email_message_id: string | null;
   created_at: string;
 };
 

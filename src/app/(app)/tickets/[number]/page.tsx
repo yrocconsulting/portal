@@ -126,11 +126,16 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
                     <span title={fmtDateTime(it.at)}>{timeAgo(it.at)}</span>
                   </li>
                 ) : (
-                  <li key={it.c.id} className={`card p-4 ${it.c.author_kind === "claude" ? "border-green/50" : ""}`}>
+                  <li key={it.c.id} className={`card p-4 ${it.c.author_kind === "claude" ? "border-green/50" : it.c.author_kind === "email" ? "border-l-4 border-l-steel" : ""}`}>
                     <div className="mb-2 flex items-center justify-between gap-3 text-xs">
                       <span className="font-semibold">
-                        {it.c.author_kind === "staff" ? who(it.c.author_id) : it.c.author_kind === "claude" ? "Claude" : it.c.author_name ?? "Email"}
-                        {it.c.author_kind === "email" && <span className="ml-2 font-normal text-muted">via email</span>}
+                        {it.c.author_kind === "staff" ? who(it.c.author_id) : it.c.author_kind === "claude" ? "Claude" : it.c.author_name ?? "Client"}
+                        {it.c.author_kind === "email" && (
+                          <span className="ml-2 font-normal text-muted">
+                            {it.c.email_message_id ? "via email" : "client message"}
+                            {it.c.author_id && `, ${it.c.email_message_id ? "forwarded" : "logged"} by ${who(it.c.author_id)}`}
+                          </span>
+                        )}
                       </span>
                       <span className="flex items-center gap-3 text-muted">
                         <span title={fmtDateTime(it.at)}>{timeAgo(it.at)}</span>
@@ -143,7 +148,7 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
               )}
             </ol>
             <div className="mt-4">
-              <CommentBox ticketId={t.id} status={t.status} />
+              <CommentBox ticketId={t.id} status={t.status} contactName={contact.data?.name ?? ""} />
             </div>
           </section>
         </div>

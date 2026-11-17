@@ -13,8 +13,9 @@ const int = (v: unknown) => (Number.isFinite(Number(v)) ? Math.max(0, Math.round
 const dom = (v: unknown) => (typeof v === "string" && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v.trim()) ? v.trim().toLowerCase() : null);
 
 function authorized(request: NextRequest): boolean {
-  const secret = process.env.PRT_INGEST_SECRET;
-  const got = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  // Trim both sides: pasted secrets often pick up a trailing space or line break.
+  const secret = process.env.PRT_INGEST_SECRET?.trim();
+  const got = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
   if (!secret || got.length !== secret.length) return false;
   return timingSafeEqual(Buffer.from(got), Buffer.from(secret));
 }

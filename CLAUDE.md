@@ -41,6 +41,10 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - Profiles: people change their own details only through `update_my_profile()` (can't touch role or
   access); admins update `staff` directly. Photos: private `avatars` bucket, folder per person,
   displayed via `avatarUrls()` (signed links).
+- Monthly reports: `packages` + `package_items` are templates; `start_monthly_report()` copies the
+  items into `report_items`, so editing a package never changes past months. Complete = archived and
+  read-only (server actions refuse edits); only admins reopen or delete. `wins` is captured for a
+  future client-facing report.
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

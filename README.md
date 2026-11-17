@@ -43,7 +43,14 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   against the previous 28 days, a 90-day chart, and top queries and pages. **Search Console** lists
   all properties and links any that don't match a client by domain (`clients.gsc_site_url`).
 
-Coming next: Claude-assisted tasks (drafts that a person approves).
+- **Monthly reports:** clients are on a package (Search Foundation / Growth / Authority, seeded from
+  the deliverables sheet; admins edit them under **Packages**). Each month a record is created per
+  client with its own copy of the package's deliverables: done / not done / N/A, counts against
+  targets, links and notes; a Search Growth Actions log by action type; wins, summary, next
+  priorities and organic leads; and a saved Google Search + AI visibility snapshot. **Mark complete**
+  archives the month read-only (admins can reopen). Print view at `/reports/[id]/print`.
+
+Coming next: client-facing monthly report built from these records, Claude-assisted tasks (drafts that a person approves).
 
 ## Local development
 

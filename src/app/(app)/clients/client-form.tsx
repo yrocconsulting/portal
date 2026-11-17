@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { createClientRecord, updateClientRecord } from "./actions";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, LINK_FIELDS, SERVICES, type Client } from "@/lib/types";
 
-export function ClientForm({ client }: { client?: Client }) {
+export function ClientForm({ client, packages = [] }: { client?: Client; packages?: { id: string; name: string }[] }) {
   const [state, action, pending] = useActionState(client ? updateClientRecord : createClientRecord, {});
   const [wl, setWl] = useState(client?.white_label ?? false);
 
@@ -43,6 +43,20 @@ export function ClientForm({ client }: { client?: Client }) {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="package_id">
+            Package
+          </label>
+          <select id="package_id" name="package_id" defaultValue={client?.package_id ?? ""} className="field">
+            <option value="">No package</option>
+            {packages.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted">Sets the deliverables on their monthly reports.</p>
         </div>
         <div>
           <label className="label" htmlFor="city">

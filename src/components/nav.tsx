@@ -12,6 +12,7 @@ const I = {
   inbox: <path d="M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />,
   visibility: <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />,
   search: <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />,
+  reports: <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 15l2.5 2.5L16 12" />,
   onboarding: <path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" />,
   team: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
 };
@@ -30,6 +31,7 @@ export function Nav({ isAdmin }: { isAdmin: boolean }) {
     { href: "/", label: "Dashboard", icon: <Icon d={I.home} /> },
     { href: "/tickets", label: "Tickets", icon: <Icon d={I.ticket} /> },
     { href: "/clients", label: "Clients", icon: <Icon d={I.clients} /> },
+    { href: "/reports", label: "Monthly reports", icon: <Icon d={I.reports} /> },
     { href: "/visibility", label: "AI visibility", icon: <Icon d={I.visibility} /> },
     { href: "/search-console", label: "Search Console", icon: <Icon d={I.search} /> },
     { href: "/inbox", label: "Inbox", icon: <Icon d={I.inbox} /> },

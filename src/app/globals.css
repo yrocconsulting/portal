@@ -52,3 +52,13 @@ h3 {
 @utility card {
   @apply rounded-xl border border-line bg-white shadow-xs;
 }
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

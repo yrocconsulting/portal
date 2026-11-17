@@ -15,6 +15,7 @@ import { ClientForm } from "../client-form";
 import { AiVisibility } from "@/components/ai-visibility";
 import { SearchConsole } from "@/components/search-console";
 import { trackedDomain } from "@/lib/visibility";
+import { monthLabel } from "@/lib/reports";
 import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
 
@@ -39,11 +40,13 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
   let tq = supabase.from("tickets").select(TICKET_ROW).eq("client_id", id).order("updated_at", { ascending: false }).limit(100);
   if (!showAll) tq = tq.in("status", OPEN_STATUSES);
 
-  const [{ data: tickets }, { data: contacts }, { data: templates }, { data: staff }, { data: credRows }, { data: views }] = await Promise.all([
+  const [{ data: tickets }, { data: contacts }, { data: templates }, { data: staff }, { data: packages }, { data: monthly }, { data: credRows }, { data: views }] = await Promise.all([
     tq,
     supabase.from("contacts").select("*").eq("client_id", id).order("is_primary", { ascending: false }).order("name"),
     supabase.from("onboarding_templates").select("id, name, onboarding_steps(count)").order("name"),
     supabase.from("staff").select("id, full_name, email").eq("active", true).order("full_name"),
+    supabase.from("packages").select("id, name").order("position"),
+    supabase.from("monthly_reports").select("id, month, status").eq("client_id", id).order("month", { ascending: false }).limit(24),
     supabase.from("client_credentials").select("id, client_id, kind, label, url, username, notes, updated_at, password_enc").eq("client_id", id).order("kind"),
     supabase.from("credential_views").select("action, created_at, staff:staff(full_name, email), credential:client_credentials(label, kind)").eq("client_id", id).order("created_at", { ascending: false }).limit(15),
   ]);
@@ -144,7 +147,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               <span className="text-sm font-normal text-green-d group-open:hidden">Edit</span>
             </summary>
             <div className="border-t border-line p-4">
-              <ClientForm client={c} />
+              <ClientForm client={c} packages={packages ?? []} />
             </div>
           </details>
 
@@ -184,6 +187,30 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               <p className="px-4 py-3 text-sm text-muted">No contacts yet.</p>
             )}
             <AddContactForm clientId={c.id} />
+          </section>
+
+          <section className="card">
+            <header className="flex items-center justify-between border-b border-line px-4 py-3">
+              <h2 className="font-semibold">Monthly reports</h2>
+              <Link href="/reports" className="text-sm text-green-d hover:underline">
+                All clients
+              </Link>
+            </header>
+            <p className="px-4 pt-3 text-xs text-muted">Package: {(packages ?? []).find((p) => p.id === c.package_id)?.name ?? "none set (choose one in Client details)"}</p>
+            {(monthly ?? []).length ? (
+              <ul className="divide-y divide-line">
+                {(monthly ?? []).map((m) => (
+                  <li key={m.id}>
+                    <Link href={`/reports/${m.id}`} className="flex items-center justify-between px-4 py-2 text-sm hover:bg-bg/60">
+                      {monthLabel((m.month as string).slice(0, 7))}
+                      <span className={`text-xs ${m.status === "complete" ? "text-green-d" : "text-amber-700"}`}>{m.status === "complete" ? "Archived" : "In progress"}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="px-4 py-3 text-sm text-muted">No monthly reports yet.</p>
+            )}
           </section>
 
           <Credentials clientId={c.id} creds={creds} ready={credentialsReady()} log={log} />

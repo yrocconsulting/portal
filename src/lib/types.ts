@@ -81,6 +81,7 @@ export type Client = {
   links: Record<string, string>;
   tracking_domain: string | null;
   gsc_site_url: string | null;
+  package_id: string | null;
   created_at: string;
 };
 

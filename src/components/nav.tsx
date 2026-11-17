@@ -13,6 +13,7 @@ const I = {
   visibility: <path d="M3 3v18h18M7 15l4-4 3 3 5-6" />,
   search: <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" />,
   reports: <path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 15l2.5 2.5L16 12" />,
+  revenue: <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />,
   onboarding: <path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" />,
   team: <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />,
 };
@@ -37,6 +38,7 @@ export function Nav({ isAdmin }: { isAdmin: boolean }) {
     { href: "/reports", label: "Monthly reports", icon: <Icon d={I.reports} />, child: true },
     { href: "/visibility", label: "AI visibility", icon: <Icon d={I.visibility} />, child: true },
     { href: "/search-console", label: "Search Console", icon: <Icon d={I.search} />, child: true },
+    ...(isAdmin ? [{ href: "/revenue", label: "Revenue", icon: <Icon d={I.revenue} />, child: true }] : []),
     { href: "/inbox", label: "Inbox", icon: <Icon d={I.inbox} /> },
     { href: "/onboarding", label: "Onboarding", icon: <Icon d={I.onboarding} /> },
     ...(isAdmin ? [{ href: "/team", label: "Team", icon: <Icon d={I.team} /> }] : []),

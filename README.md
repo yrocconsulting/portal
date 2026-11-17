@@ -58,6 +58,11 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   emailed tickets and onboarding default to the lead; "My clients" filters on Clients and Monthly
   reports.
 
+- **Fees and revenue (admins only):** each client has a monthly fee (pre-filled from the dollar amount
+  in the sheet's package text, which is kept for reference). **Revenue** shows the expected monthly
+  total from active and onboarding clients, by package and lead, clients missing a fee, fee change
+  history and a month-by-month record (saved daily by the cron).
+
 Coming next: Claude-assisted tasks (drafts that a person approves).
 
 ## Local development

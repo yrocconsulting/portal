@@ -8,7 +8,9 @@ export function ClientForm({
   client,
   packages = [],
   staff = [],
+  isAdmin = false,
 }: {
+  isAdmin?: boolean;
   client?: Client;
   packages?: { id: string; name: string }[];
   staff?: { id: string; name: string }[];
@@ -123,12 +125,25 @@ export function ClientForm({
           </label>
           <input id="address" name="address" defaultValue={client?.address ?? ""} className="field" />
         </div>
-        <div>
-          <label className="label" htmlFor="package">
-            Package
-          </label>
-          <input id="package" name="package" defaultValue={client?.package ?? ""} placeholder="What they pay for, as agreed" className="field" />
-        </div>
+        {isAdmin && (
+          <div>
+            <label className="label" htmlFor="monthly_fee">
+              Monthly fee ($)
+            </label>
+            <input
+              id="monthly_fee"
+              name="monthly_fee"
+              type="number"
+              min={0}
+              step="0.01"
+              inputMode="decimal"
+              defaultValue={client?.monthly_fee ?? ""}
+              placeholder="e.g. 3000"
+              className="field"
+            />
+            {client?.package && <p className="mt-1 text-xs text-muted">From the client sheet: {client.package}</p>}
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="payment_method">
             Payment method

@@ -10,7 +10,7 @@ import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, OPEN_STATUSES, SERVICES, type Cli
 
 export const metadata: Metadata = { title: "Clients" };
 
-const SORTS = ["name", "lead", "package", "domain", "industry", "status", "services", "visibility", "tickets"] as const;
+const SORTS = ["name", "lead", "package", "fee", "domain", "industry", "status", "services", "visibility", "tickets"] as const;
 type SortKey = (typeof SORTS)[number];
 const STATUS_ORDER = { onboarding: 0, active: 1, paused: 2, former: 3 } as const;
 
@@ -72,6 +72,8 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
         return c.lead_id ? staffName(person(c.lead_id)).toLowerCase() : null;
       case "package":
         return pkg(c.package_id)?.position ?? null;
+      case "fee":
+        return c.monthly_fee === null ? null : Number(c.monthly_fee);
       case "domain":
         return c.domain;
       case "industry":
@@ -106,7 +108,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
     if (key !== "name" || sort !== "name" || !desc) {
       u.set("sort", key);
       // Numbers start high-to-low (best first); text starts A to Z.
-      const firstDesc = key === "visibility" || key === "tickets";
+      const firstDesc = key === "visibility" || key === "tickets" || key === "fee";
       if (sort === key ? !desc : firstDesc) u.set("dir", "desc");
     }
     if (key === "name" && sort === "name" && desc) u.delete("sort");
@@ -174,6 +176,11 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                 </Th>
                 <Th {...th("lead")}>Lead</Th>
                 <Th {...th("package")}>Package</Th>
+                {me.role === "admin" && (
+                  <Th {...th("fee")} right>
+                    Fee
+                  </Th>
+                )}
                 <Th {...th("domain")} className="hidden 2xl:table-cell">
                   Domain
                 </Th>
@@ -213,6 +220,11 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                     })()}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{pkg(c.package_id)?.name.replace(/^Search /, "") ?? <span className="text-muted/50">none</span>}</td>
+                  {me.role === "admin" && (
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      {c.monthly_fee === null ? <span className="text-muted/50">none</span> : `$${Number(c.monthly_fee).toLocaleString("en-US")}`}
+                    </td>
+                  )}
                   <td className="hidden whitespace-nowrap px-4 py-3 text-muted 2xl:table-cell">{c.domain}</td>
                   <td className="hidden whitespace-nowrap px-4 py-3 text-muted 2xl:table-cell">{c.industry ?? c.city}</td>
                   <td className="px-4 py-3">{CLIENT_STATUS_LABEL[c.status]}</td>

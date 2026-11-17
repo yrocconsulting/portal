@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ensureSubscription, processHelpdesk } from "@/lib/email/process";
 import { syncSearchConsole } from "@/lib/gsc/sync";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const maxDuration = 300;
 
@@ -21,5 +22,11 @@ export async function GET(request: NextRequest) {
   }
   result.email = await processHelpdesk().catch((e) => ({ errors: [(e as Error).message] }));
   result.searchConsole = await syncSearchConsole().catch((e) => ({ errors: [(e as Error).message] }));
+  try {
+    const { error } = await createAdminClient().rpc("snapshot_revenue");
+    result.revenue = error ? `error: ${error.message}` : "saved";
+  } catch (e) {
+    result.revenue = `error: ${(e as Error).message}`;
+  }
   return NextResponse.json(result);
 }

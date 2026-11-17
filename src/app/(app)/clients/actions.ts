@@ -9,6 +9,13 @@ import { CLIENT_STATUSES, LINK_FIELDS } from "@/lib/types";
 
 type State = { error?: string; ok?: number };
 
+function feeField(fd: FormData): { monthly_fee?: number | null } {
+  if (!fd.has("monthly_fee")) return {};
+  const v = str(fd, "monthly_fee");
+  const n = v === null ? null : Number(v.replace(/[$,\s]/g, ""));
+  return { monthly_fee: n === null || !Number.isFinite(n) || n < 0 ? null : Math.round(n * 100) / 100 };
+}
+
 function clientFields(fd: FormData) {
   const status = str(fd, "status");
   const whiteLabel = fd.get("white_label") === "on";
@@ -25,7 +32,6 @@ function clientFields(fd: FormData) {
     notes: str(fd, "notes"),
     address: str(fd, "address"),
     industry: str(fd, "industry"),
-    package: str(fd, "package"),
     payment_method: str(fd, "payment_method"),
     drive_url: str(fd, "drive_url"),
     locations: str(fd, "locations"),
@@ -45,8 +51,8 @@ function friendly(msg: string): string {
 }
 
 export async function createClientRecord(_prev: State, fd: FormData): Promise<State> {
-  await requireStaff();
-  const fields = clientFields(fd);
+  const me = await requireStaff();
+  const fields = { ...clientFields(fd), ...(me.role === "admin" ? feeField(fd) : {}) };
   if (!fields.name) return { error: "Client name is required." };
   const supabase = await createClient();
   const { data, error } = await supabase.from("clients").insert(fields).select("id").single();
@@ -68,9 +74,9 @@ export async function createClientRecord(_prev: State, fd: FormData): Promise<St
 }
 
 export async function updateClientRecord(_prev: State, fd: FormData): Promise<State> {
-  await requireStaff();
+  const me = await requireStaff();
   const id = str(fd, "id");
-  const fields = clientFields(fd);
+  const fields = { ...clientFields(fd), ...(me.role === "admin" ? feeField(fd) : {}) };
   if (!id || !fields.name) return { error: "Client name is required." };
   const supabase = await createClient();
   const { error } = await supabase.from("clients").update(fields).eq("id", id);

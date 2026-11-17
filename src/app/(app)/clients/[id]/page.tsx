@@ -62,7 +62,9 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
   const links = LINK_FIELDS.filter(([k]) => c.links?.[k]);
   const details: [string, React.ReactNode][] = [
     ["Industry", c.industry],
-    ["Package", c.package],
+    ...(me.role === "admin"
+      ? ([["Monthly fee", c.monthly_fee !== null ? `$${Number(c.monthly_fee).toLocaleString("en-US", { maximumFractionDigits: 2 })}/mo` : "Not set"]] as [string, string][])
+      : []),
     ["Start date", c.start_date ? fmtDate(c.start_date) : null],
     ["Payment", c.payment_method],
     ["Phone", c.phone],
@@ -156,7 +158,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               <span className="text-sm font-normal text-green-d group-open:hidden">Edit</span>
             </summary>
             <div className="border-t border-line p-4">
-              <ClientForm client={c} packages={packages ?? []} staff={(staff ?? []).map((s) => ({ id: s.id, name: staffName(s) }))} />
+              <ClientForm isAdmin={me.role === "admin"} client={c} packages={packages ?? []} staff={(staff ?? []).map((s) => ({ id: s.id, name: staffName(s) }))} />
             </div>
           </details>
 

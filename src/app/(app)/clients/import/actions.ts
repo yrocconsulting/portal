@@ -39,7 +39,7 @@ export async function commitImport(records: ImportRecord[]): Promise<CommitResul
   const out: CommitResult = { created: 0, updated: 0, contacts: 0, warnings: [] };
   if (!Array.isArray(records) || records.length > 500) return { ...out, error: "Nothing to import." };
   const supabase = await createClient();
-  const { data: all } = await supabase.from("clients").select("id, name, domain, status, services, links");
+  const { data: all } = await supabase.from("clients").select("id, name, domain, status, services, links, monthly_fee");
   const clients = all ?? [];
 
   for (const raw of records) {
@@ -67,6 +67,8 @@ export async function commitImport(records: ImportRecord[]): Promise<CommitResul
       phone: s(raw.phone, 50),
       start_date: /^\d{4}-\d{2}-\d{2}$/.test(raw.start_date ?? "") ? raw.start_date : null,
     };
+    const feeMatch = (raw.package ?? "").replace(/,/g, "").match(/\$\s*(\d+(?:\.\d+)?)/);
+    if (feeMatch && !(existing as { monthly_fee?: number | null } | undefined)?.monthly_fee) fields.monthly_fee = Number(feeMatch[1]);
     // Only overwrite with values the sheet actually has.
     for (const k of Object.keys(fields)) if (fields[k] === null) delete fields[k];
     if (domain && !domainTaken) fields.domain = domain;
@@ -89,7 +91,7 @@ export async function commitImport(records: ImportRecord[]): Promise<CommitResul
       const { data, error } = await supabase
         .from("clients")
         .insert({ name, ...fields, status: raw.status === "former" ? "former" : "active", services, links })
-        .select("id, name, domain, status, services, links")
+        .select("id, name, domain, status, services, links, monthly_fee")
         .single();
       if (error) {
         out.warnings.push(`${name}: ${error.message}`);

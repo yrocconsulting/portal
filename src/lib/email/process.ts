@@ -114,7 +114,7 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
         .from("email_messages")
         .update({ status: "comment", ticket_id: t.id, staff_id: forwarder.id, original_from_email: original?.email ?? null, original_from_name: original?.name ?? null, attachment_count: files })
         .eq("id", emailId);
-      await confirm(cfg, forwarder.email, `Added to ticket #${t.number}: ${t.title}`, [
+      await confirm(cfg, staff, forwarder.email, `Added to ticket #${t.number}: ${t.title}`, [
         `Your forwarded email was added to ticket #${t.number}${files ? ` with ${files} file${files === 1 ? "" : "s"}` : ""}.`,
         `${siteUrl()}/tickets/${t.number}`,
       ]);
@@ -178,7 +178,7 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
     .update({ status: "ticket", ticket_id: ticket.id, staff_id: forwarder.id, original_from_email: original?.email ?? null, original_from_name: original?.name ?? null, attachment_count: files })
     .eq("id", emailId);
 
-  await confirm(cfg, forwarder.email, `Ticket #${ticket.number} created: ${ticket.title}`, [
+  await confirm(cfg, staff, forwarder.email, `Ticket #${ticket.number} created: ${ticket.title}`, [
     `Ticket #${ticket.number} was created${clientName ? ` for ${clientName}` : ""}${files ? ` with ${files} file${files === 1 ? "" : "s"}` : ""}.`,
     clientName ? "" : original ? `No client matched ${original.email}. Set the client on the ticket.` : "The original sender wasn't found in the email. Set the client on the ticket.",
     `${siteUrl()}/tickets/${ticket.number}`,
@@ -205,7 +205,9 @@ async function saveAttachments(db: Admin, cfg: MailConfig, messageId: string, ti
   return n;
 }
 
-async function confirm(cfg: MailConfig, to: string, subject: string, lines: string[]) {
+async function confirm(cfg: MailConfig, staff: Staff[], to: string, subject: string, lines: string[]) {
+  // The portal only ever emails the team, never clients.
+  if (!staff.some((s) => s.email.toLowerCase() === to.toLowerCase())) return;
   // A failed confirmation should not undo the ticket.
   await sendMail(cfg, to, subject, lines.filter((l, i, a) => l !== "" || (i > 0 && a[i - 1] !== "")).join("\n")).catch(() => {});
 }

@@ -7,7 +7,7 @@ import { todayCentral } from "@/lib/format";
 import { TICKET_ROW } from "@/lib/queries";
 import { progress } from "@/lib/report-progress";
 import { monthLabel } from "@/lib/reports";
-import { verseOfTheDay } from "@/lib/scripture";
+import { randomVerse } from "@/lib/scripture";
 import { createClient } from "@/lib/supabase/server";
 import { OPEN_STATUSES, STATUS_LABEL, type TicketRow } from "@/lib/types";
 import { trackedDomain } from "@/lib/visibility";
@@ -26,7 +26,7 @@ export default async function Dashboard() {
   const today = todayCentral();
   const month = today.slice(0, 7);
   const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", hour: "numeric", hourCycle: "h23" }).format(new Date()));
-  const verse = verseOfTheDay(today);
+  const verse = randomVerse();
 
   const [mine, unassigned, overdue, open, myClientsRes, latestPrt] = await Promise.all([
     supabase.from("tickets").select(TICKET_ROW).eq("assignee_id", me.id).in("status", OPEN_STATUSES).order("due_date", { ascending: true, nullsFirst: false }).limit(25),
@@ -92,7 +92,7 @@ export default async function Dashboard() {
         </div>
         <figure className="relative overflow-hidden rounded-xl bg-ink p-6 text-white">
           <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-green opacity-15 blur-3xl" />
-          <p className="relative text-[11px] font-bold tracking-[0.2em] text-green uppercase">Verse of the day</p>
+          <p className="relative text-[11px] font-bold tracking-[0.2em] text-green uppercase">A word of encouragement</p>
           <blockquote className="relative mt-3 font-display text-lg leading-snug">&ldquo;{verse.text}&rdquo;</blockquote>
           <figcaption className="relative mt-3 text-sm text-white/60">
             {verse.ref} <span className="text-white/35">(BSB)</span>

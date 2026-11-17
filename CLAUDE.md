@@ -49,8 +49,8 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   client sees; keep it client-safe. Public page `/r/[token]` uses the anonymous key and the
   `get_shared_report()` function, never the secret key. White label (`brand: "none"`) must never
   render "Yroc" anywhere, including titles and metadata.
-- Fees: `clients.monthly_fee` is admin-only in the UI (form field, list column, Revenue page);
-  `updateClientRecord` only touches it when an admin's form includes it. Changes are logged by trigger
+- Fees: `clients.monthly_fee` is admin-only in the UI (client form, client details, Revenue page);
+  `updateClientRecord` only touches it when an admin's form includes it. Not shown on the clients list. Changes are logged by trigger
   into `client_fee_history`; `snapshot_revenue()` saves the month's expected total in `revenue_months`.
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.

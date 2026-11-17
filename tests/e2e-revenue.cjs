@@ -57,10 +57,9 @@ async function openClient(page, q) {
   await a.reload();
   ok((await a.textContent("main")).includes("$3,750/mo"), "fee shown in client details for admins");
 
-  // Clients list fee column, sortable.
-  await a.goto(BASE + "/clients?sort=fee&dir=desc");
-  const first = await a.$eval("tbody tr td:first-child a", (x) => x.textContent);
-  ok(first.includes("FrigiServe"), "clients list sorts by fee, highest first");
+  // Fees stay off the clients list.
+  await a.goto(BASE + "/clients");
+  ok(!(await a.textContent("thead")).includes("Fee"), "no fee column on the clients list");
 
   // Revenue page
   await a.goto(BASE + "/revenue");

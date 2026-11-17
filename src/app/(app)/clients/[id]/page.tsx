@@ -228,7 +228,13 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
 
           <section className="card p-4">
             <h2 className="mb-1 font-semibold">Onboarding</h2>
-            <p className="mb-3 text-sm text-muted">Creates one ticket per checklist step, with due dates counted from today.</p>
+            <p className="mb-3 text-sm text-muted">
+              Creates one ticket per checklist step, due dates counted from today. Each step goes to the person set on it under{" "}
+              <Link href="/onboarding" className="text-green-d hover:underline">
+                Onboarding
+              </Link>
+              .
+            </p>
             <OnboardingForm
               clientId={c.id}
               templates={(templates ?? []).map((t) => ({ id: t.id, name: t.name, steps: (t.onboarding_steps as unknown as { count: number }[])[0]?.count ?? 0 }))}

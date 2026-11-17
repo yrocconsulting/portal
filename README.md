@@ -13,6 +13,8 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
 - **Clients:** contacts, services, status, notes and a **white-label** flag (with the agency partner).
   White-label clients must never be named on the website or used as case studies.
 - **Onboarding:** checklists whose steps become tickets for a client, due N days after the start.
+  Every step is editable and says who gets its ticket: the client's lead, their account manager,
+  whoever starts onboarding, a specific person, or nobody. "Assign all to..." overrides per start.
 - **Team:** admins invite people by email and set roles. Members can't delete tickets or clients.
 - **Profiles:** everyone sets their name, job title, phone and photo under **My profile** (click your
   name in the sidebar); admins can edit anyone's from **Team**. Photos live in the private `avatars`

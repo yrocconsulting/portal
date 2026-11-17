@@ -77,9 +77,9 @@ async function signIn(page, email) {
   await a.goto(BASE + "/reports?month=2026-11&mine=1");
   ok(!(await a.textContent("tbody")).includes("FrigiServe"), "admin's own list excludes it");
 
-  // Onboarding defaults to the lead.
+  // Onboarding uses each step's assignee: the kickoff call goes to the account manager (admin), the rest to the lead (member).
   await a.goto(BASE + `/clients/${clientId}`);
-  ok((await a.inputValue("select[name=assignee_id]")) === memberId, "onboarding assigns to the lead by default");
+  ok((await a.inputValue("select[name=assignee_id]")) === "", "onboarding uses each step's assignee by default");
 
   await browser.close();
   console.log("LEADS E2E PASSED");

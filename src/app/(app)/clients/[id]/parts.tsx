@@ -75,8 +75,8 @@ export function OnboardingForm({
           </option>
         ))}
       </select>
-      <select name="assignee_id" className="field" defaultValue={defaultAssignee}>
-        <option value="">Leave tickets unassigned</option>
+      <select name="assignee_id" className="field" defaultValue="">
+        <option value="">Use each step&apos;s assignee{defaultAssignee ? "" : " (no lead set yet)"}</option>
         {staff.map((s) => (
           <option key={s.id} value={s.id}>
             Assign all to {s.label}

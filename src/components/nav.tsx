@@ -25,32 +25,36 @@ function Icon({ d }: { d: React.ReactNode }) {
   );
 }
 
+type NavItem = Item & { child?: boolean };
+
 export function Nav({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
-  const items: Item[] = [
+  const items: NavItem[] = [
     { href: "/", label: "Dashboard", icon: <Icon d={I.home} /> },
     { href: "/tickets", label: "Tickets", icon: <Icon d={I.ticket} /> },
     { href: "/clients", label: "Clients", icon: <Icon d={I.clients} /> },
-    { href: "/reports", label: "Monthly reports", icon: <Icon d={I.reports} /> },
-    { href: "/visibility", label: "AI visibility", icon: <Icon d={I.visibility} /> },
-    { href: "/search-console", label: "Search Console", icon: <Icon d={I.search} /> },
+    // Client tools, shown under Clients.
+    { href: "/reports", label: "Monthly reports", icon: <Icon d={I.reports} />, child: true },
+    { href: "/visibility", label: "AI visibility", icon: <Icon d={I.visibility} />, child: true },
+    { href: "/search-console", label: "Search Console", icon: <Icon d={I.search} />, child: true },
     { href: "/inbox", label: "Inbox", icon: <Icon d={I.inbox} /> },
     { href: "/onboarding", label: "Onboarding", icon: <Icon d={I.onboarding} /> },
     ...(isAdmin ? [{ href: "/team", label: "Team", icon: <Icon d={I.team} /> }] : []),
   ];
+  const isActive = (href: string) => (href === "/" ? path === "/" : path === href || path.startsWith(`${href}/`) || (href === "/reports" && path.startsWith("/packages")));
   return (
     <nav className="flex gap-1 overflow-x-auto md:flex-col">
       {items.map((it) => {
-        const active = it.href === "/" ? path === "/" : path.startsWith(it.href);
+        const active = isActive(it.href);
         return (
           <Link
             key={it.href}
             href={it.href}
-            className={`flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${
-              active ? "bg-white/10 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"
-            }`}
+            className={`flex items-center whitespace-nowrap rounded-lg font-medium transition ${
+              it.child ? "gap-2.5 py-1.5 pr-3 pl-3 text-[13px] md:ml-6 md:border-l md:border-white/10 md:rounded-l-none md:pl-3" : "gap-3 px-3 py-2 text-sm"
+            } ${active ? "bg-white/10 text-white" : "text-white/65 hover:bg-white/5 hover:text-white"}`}
           >
-            <span className={active ? "text-green" : ""}>{it.icon}</span>
+            <span className={`${active ? "text-green" : ""} ${it.child ? "[&>svg]:h-4 [&>svg]:w-4" : ""}`}>{it.icon}</span>
             {it.label}
           </Link>
         );

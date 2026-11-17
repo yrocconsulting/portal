@@ -19,7 +19,8 @@
     "test:e2e:gsc": "node tests/e2e-gsc.cjs",
     "test:e2e:reports": "node tests/e2e-reports.cjs",
     "test:e2e:client-report": "node tests/e2e-client-report.cjs",
-    "test:e2e:leads": "node tests/e2e-leads.cjs"
+    "test:e2e:leads": "node tests/e2e-leads.cjs",
+    "test:e2e:sort": "node tests/e2e-sort.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

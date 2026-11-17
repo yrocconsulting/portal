@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
-import { requireStaff } from "@/lib/auth";
+import { requireStaff, staffName } from "@/lib/auth";
 import { todayCentral } from "@/lib/format";
 import { progress } from "@/lib/report-progress";
 import { monthLabel, nextMonth, prevMonth } from "@/lib/reports";
@@ -15,11 +15,12 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
   const sp = await searchParams;
   const current = todayCentral().slice(0, 7);
   const month = typeof sp.month === "string" && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : current;
+  const mine = sp.mine === "1";
   const supabase = await createClient();
 
   const [{ data: clients }, { data: reports }] = await Promise.all([
-    supabase.from("clients").select("id, name, status, white_label, package:packages(id, name)").neq("status", "former").order("name"),
-    supabase.from("monthly_reports").select("id, client_id, status, package_name, client:clients(id, name, white_label)").eq("month", `${month}-01`),
+    supabase.from("clients").select("id, name, status, white_label, lead_id, package:packages(id, name)").neq("status", "former").order("name"),
+    supabase.from("monthly_reports").select("id, client_id, status, package_name, client:clients(id, name, white_label, lead_id)").eq("month", `${month}-01`),
   ]);
   const ids = (reports ?? []).map((r) => r.id);
   const [{ data: items }, { data: actions }] = ids.length
@@ -32,18 +33,24 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
   const actionCount = (id: string) => (actions ?? []).filter((a) => a.report_id === id).length;
 
   // Clients with a record this month first (including archived ones), then active clients without one.
-  type Row = { clientId: string; name: string; whiteLabel: boolean; packageName: string | null; report: NonNullable<typeof reports>[number] | null };
+  type Row = { clientId: string; name: string; whiteLabel: boolean; leadId: string | null; packageName: string | null; report: NonNullable<typeof reports>[number] | null };
   const rows: Row[] = [];
   for (const r of reports ?? []) {
-    const c = r.client as unknown as { id: string; name: string; white_label: boolean };
-    rows.push({ clientId: c.id, name: c.name, whiteLabel: c.white_label, packageName: r.package_name, report: r });
+    const c = r.client as unknown as { id: string; name: string; white_label: boolean; lead_id: string | null };
+    rows.push({ clientId: c.id, name: c.name, whiteLabel: c.white_label, leadId: c.lead_id, packageName: r.package_name, report: r });
   }
   for (const c of clients ?? []) {
     if (byReport.has(c.id)) continue;
-    rows.push({ clientId: c.id, name: c.name, whiteLabel: c.white_label, packageName: (c.package as unknown as { name: string } | null)?.name ?? null, report: null });
+    rows.push({ clientId: c.id, name: c.name, whiteLabel: c.white_label, leadId: c.lead_id, packageName: (c.package as unknown as { name: string } | null)?.name ?? null, report: null });
   }
   rows.sort((a, b) => a.name.localeCompare(b.name));
-  const missing = rows.filter((r) => !r.report && r.packageName).length;
+  const { data: staff } = await supabase.from("staff").select("id, full_name, email");
+  const leadName = (id: string | null) => {
+    const s = (staff ?? []).find((x) => x.id === id);
+    return s ? staffName(s).split(" ")[0] : "";
+  };
+  const shown = mine ? rows.filter((r) => r.leadId === me.id) : rows;
+  const missing = shown.filter((r) => !r.report && r.packageName).length;
   const isPast = month < current;
 
   return (
@@ -78,18 +85,25 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             {monthLabel(month)}
             {isPast && <span className="ml-2 text-xs font-normal text-muted">(past month)</span>}
           </h2>
+          <span className="flex flex-wrap items-center gap-3">
+          <Link href={`/reports?month=${month}${mine ? "" : "&mine=1"}`} className="text-sm text-green-d hover:underline">
+            {mine ? "Show all clients" : "Only my clients"}
+          </Link>
           {missing > 0 && (
             <form action={startAll}>
               <input type="hidden" name="month" value={month} />
+              {mine && <input type="hidden" name="mine" value="1" />}
               <button className="btn-primary py-1.5 text-sm">Start all {missing} for {monthLabel(month).split(" ")[0]}</button>
             </form>
           )}
+          </span>
         </header>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold tracking-wide text-muted uppercase">
                 <th className="px-4 py-2.5">Client</th>
+                <th className="px-4 py-2.5">Lead</th>
                 <th className="px-4 py-2.5">Package</th>
                 <th className="px-4 py-2.5">Progress</th>
                 <th className="px-4 py-2.5">Search Growth Actions</th>
@@ -98,7 +112,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map((row) => {
+              {shown.map((row) => {
                 const r = row.report;
                 const its = r ? (items ?? []).filter((i) => i.report_id === r.id) : [];
                 const acts = r ? actionCount(r.id) : 0;
@@ -113,6 +127,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                         {row.whiteLabel && <WhiteLabelBadge />}
                       </span>
                     </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted">{leadName(row.leadId)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted">{row.packageName ?? <span className="text-amber-700">No package set</span>}</td>
                     <td className="px-4 py-3">
                       {r ? (

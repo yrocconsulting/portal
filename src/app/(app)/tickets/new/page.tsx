@@ -11,7 +11,7 @@ export default async function NewTicketPage({ searchParams }: PageProps<"/ticket
   const supabase = await createClient();
   const [{ data: staff }, { data: clients }, { data: contacts }] = await Promise.all([
     supabase.from("staff").select("id, full_name, email").eq("active", true).order("full_name"),
-    supabase.from("clients").select("id, name").neq("status", "former").order("name"),
+    supabase.from("clients").select("id, name, lead_id").neq("status", "former").order("name"),
     supabase.from("contacts").select("id, name, client_id").order("name"),
   ]);
   return (
@@ -21,7 +21,7 @@ export default async function NewTicketPage({ searchParams }: PageProps<"/ticket
         me={me.id}
         defaultClient={typeof sp.client === "string" ? sp.client : ""}
         staff={(staff ?? []).map((s) => ({ id: s.id, label: staffName(s) }))}
-        clients={(clients ?? []).map((c) => ({ id: c.id, label: c.name }))}
+        clients={(clients ?? []).map((c) => ({ id: c.id, label: c.name, lead: c.lead_id }))}
         contacts={(contacts ?? []).map((c) => ({ id: c.id, label: c.name, client_id: c.client_id }))}
       />
     </div>

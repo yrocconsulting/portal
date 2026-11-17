@@ -50,10 +50,12 @@ export function OnboardingForm({
   clientId,
   templates,
   staff,
+  defaultAssignee = "",
 }: {
   clientId: string;
   templates: { id: string; name: string; steps: number }[];
   staff: { id: string; label: string }[];
+  defaultAssignee?: string;
 }) {
   const [state, action, pending] = useActionState(startOnboarding, {});
   if (!templates.length) return <p className="text-sm text-muted">No onboarding checklists yet.</p>;
@@ -73,7 +75,7 @@ export function OnboardingForm({
           </option>
         ))}
       </select>
-      <select name="assignee_id" className="field" defaultValue="">
+      <select name="assignee_id" className="field" defaultValue={defaultAssignee}>
         <option value="">Leave tickets unassigned</option>
         {staff.map((s) => (
           <option key={s.id} value={s.id}>

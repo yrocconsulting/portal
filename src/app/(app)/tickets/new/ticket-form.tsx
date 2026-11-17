@@ -15,13 +15,17 @@ export function TicketForm({
   defaultClient,
 }: {
   staff: Opt[];
-  clients: Opt[];
+  clients: (Opt & { lead: string | null })[];
   contacts: ContactOpt[];
   me: string;
   defaultClient: string;
 }) {
   const [state, action, pending] = useActionState(createTicket, {});
   const [client, setClient] = useState(defaultClient);
+  const leadOf = (id: string) => clients.find((c) => c.id === id)?.lead ?? null;
+  // Defaults to the client's lead; stays as chosen once someone picks an assignee by hand.
+  const [assignee, setAssignee] = useState(leadOf(defaultClient) ?? me);
+  const [assigneeTouched, setAssigneeTouched] = useState(false);
   const clientContacts = contacts.filter((c) => c.client_id === client);
 
   return (
@@ -43,7 +47,16 @@ export function TicketForm({
           <label className="label" htmlFor="client_id">
             Client
           </label>
-          <select id="client_id" name="client_id" value={client} onChange={(e) => setClient(e.target.value)} className="field">
+          <select
+            id="client_id"
+            name="client_id"
+            value={client}
+            onChange={(e) => {
+              setClient(e.target.value);
+              if (!assigneeTouched) setAssignee(leadOf(e.target.value) ?? me);
+            }}
+            className="field"
+          >
             <option value="">No client (internal)</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
@@ -69,7 +82,16 @@ export function TicketForm({
           <label className="label" htmlFor="assignee_id">
             Assignee
           </label>
-          <select id="assignee_id" name="assignee_id" defaultValue={me} className="field">
+          <select
+            id="assignee_id"
+            name="assignee_id"
+            value={assignee}
+            onChange={(e) => {
+              setAssignee(e.target.value);
+              setAssigneeTouched(true);
+            }}
+            className="field"
+          >
             <option value="">Unassigned</option>
             {staff.map((s) => (
               <option key={s.id} value={s.id}>

@@ -86,7 +86,16 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
             {c.status === "former" && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-700 uppercase">Archived</span>}
           </div>
           <p className="mt-1 text-sm text-muted">
-            {[CLIENT_STATUS_LABEL[c.status], c.city, c.domain, c.white_label && c.partner ? `through ${c.partner}` : null].filter(Boolean).join(" · ")}
+            {[
+              CLIENT_STATUS_LABEL[c.status],
+              c.city,
+              c.domain,
+              c.white_label && c.partner ? `through ${c.partner}` : null,
+              c.lead_id ? `Lead: ${staffName((staff ?? []).find((s) => s.id === c.lead_id))}` : null,
+              c.account_manager_id ? `Account manager: ${staffName((staff ?? []).find((s) => s.id === c.account_manager_id))}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
         <Link href={`/tickets/new?client=${c.id}`} className="btn-green">
@@ -147,7 +156,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               <span className="text-sm font-normal text-green-d group-open:hidden">Edit</span>
             </summary>
             <div className="border-t border-line p-4">
-              <ClientForm client={c} packages={packages ?? []} />
+              <ClientForm client={c} packages={packages ?? []} staff={(staff ?? []).map((s) => ({ id: s.id, name: staffName(s) }))} />
             </div>
           </details>
 
@@ -222,6 +231,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               clientId={c.id}
               templates={(templates ?? []).map((t) => ({ id: t.id, name: t.name, steps: (t.onboarding_steps as unknown as { count: number }[])[0]?.count ?? 0 }))}
               staff={(staff ?? []).map((s) => ({ id: s.id, label: staffName(s) }))}
+              defaultAssignee={c.lead_id ?? ""}
             />
           </section>
 

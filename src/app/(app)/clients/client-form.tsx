@@ -4,7 +4,15 @@ import { useActionState, useState } from "react";
 import { createClientRecord, updateClientRecord } from "./actions";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, LINK_FIELDS, SERVICES, type Client } from "@/lib/types";
 
-export function ClientForm({ client, packages = [] }: { client?: Client; packages?: { id: string; name: string }[] }) {
+export function ClientForm({
+  client,
+  packages = [],
+  staff = [],
+}: {
+  client?: Client;
+  packages?: { id: string; name: string }[];
+  staff?: { id: string; name: string }[];
+}) {
   const [state, action, pending] = useActionState(client ? updateClientRecord : createClientRecord, {});
   const [wl, setWl] = useState(client?.white_label ?? false);
 
@@ -40,6 +48,33 @@ export function ClientForm({ client, packages = [] }: { client?: Client; package
             {CLIENT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {CLIENT_STATUS_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label" htmlFor="lead_id">
+            Lead (fulfillment)
+          </label>
+          <select id="lead_id" name="lead_id" defaultValue={client?.lead_id ?? ""} className="field">
+            <option value="">Nobody yet</option>
+            {staff.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted">New tickets for this client go to them by default.</p>
+        </div>
+        <div>
+          <label className="label" htmlFor="account_manager_id">
+            Account manager
+          </label>
+          <select id="account_manager_id" name="account_manager_id" defaultValue={client?.account_manager_id ?? ""} className="field">
+            <option value="">Nobody yet</option>
+            {staff.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>

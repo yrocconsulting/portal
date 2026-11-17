@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireStaff } from "@/lib/auth";
 import { str } from "@/lib/format";
+import { buildSnapshot, newShareToken } from "@/lib/client-report";
 import { computeResults } from "@/lib/reports";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,7 +14,8 @@ async function refreshResults(reportId: string) {
   if (!r) return;
   const client = r.client as unknown as { domain: string | null; tracking_domain: string | null; gsc_site_url: string | null };
   const results = await computeResults(client, r.month as string);
-  await supabase.from("monthly_reports").update({ results, results_at: new Date().toISOString() }).eq("id", reportId);
+  const now = new Date().toISOString();
+  await supabase.from("monthly_reports").update({ results, results_at: now, content_changed_at: now }).eq("id", reportId);
 }
 
 /** Creates (or opens) a client's record for a month from their package. */
@@ -32,12 +34,15 @@ export async function startReport(fd: FormData) {
 
 /** Starts records for every active client with a package that doesn't have one this month yet. */
 export async function startAll(fd: FormData) {
-  await requireStaff();
+  const me = await requireStaff();
+  const mineOnly = fd.get("mine") === "1";
   const month = str(fd, "month");
   if (!month || !/^\d{4}-\d{2}$/.test(month)) return;
   const supabase = await createClient();
   const [{ data: clients }, { data: existing }] = await Promise.all([
-    supabase.from("clients").select("id").in("status", ["onboarding", "active"]).not("package_id", "is", null),
+    (mineOnly
+      ? supabase.from("clients").select("id").in("status", ["onboarding", "active"]).not("package_id", "is", null).eq("lead_id", me.id)
+      : supabase.from("clients").select("id").in("status", ["onboarding", "active"]).not("package_id", "is", null)),
     supabase.from("monthly_reports").select("client_id").eq("month", `${month}-01`),
   ]);
   const have = new Set((existing ?? []).map((e) => e.client_id));
@@ -68,6 +73,7 @@ export async function saveReport(reportId: string, input: ReportInput): Promise<
       summary: clean(input.summary),
       next_priorities: clean(input.next_priorities),
       organic_leads: Number.isFinite(input.organic_leads) && input.organic_leads !== null ? Math.max(0, Math.round(input.organic_leads)) : null,
+      content_changed_at: new Date().toISOString(),
     })
     .eq("id", reportId);
   if (error) return { error: error.message };
@@ -109,6 +115,7 @@ export async function addAction(_prev: { error?: string; ok?: number }, fd: Form
     created_by: me.id,
   });
   if (error) return { error: error.message };
+  await supabase.from("monthly_reports").update({ content_changed_at: new Date().toISOString() }).eq("id", reportId);
   revalidatePath(`/reports/${reportId}`);
   return { ok: Date.now() };
 }
@@ -119,6 +126,7 @@ export async function deleteAction(id: string, reportId: string) {
   const { data: r } = await supabase.from("monthly_reports").select("status").eq("id", reportId).single();
   if (r?.status === "complete") return;
   await supabase.from("report_actions").delete().eq("id", id).eq("report_id", reportId);
+  await supabase.from("monthly_reports").update({ content_changed_at: new Date().toISOString() }).eq("id", reportId);
   revalidatePath(`/reports/${reportId}`);
 }
 
@@ -152,4 +160,45 @@ export async function deleteReport(fd: FormData) {
   await supabase.from("monthly_reports").delete().eq("id", id);
   revalidatePath("/reports");
   redirect("/reports");
+}
+
+// ---------- Client-facing report ----------
+
+/** Saves the optional message to the client shown under the report's heading. */
+export async function saveClientNote(reportId: string, note: string): Promise<{ error?: string }> {
+  await requireStaff();
+  const supabase = await createClient();
+  const { error } = await supabase.from("monthly_reports").update({ client_note: clean(note, 2000), content_changed_at: new Date().toISOString() }).eq("id", reportId);
+  if (error) return { error: error.message };
+  revalidatePath(`/reports/${reportId}`);
+  return {};
+}
+
+/** Publishes (or re-publishes) the client report: takes a fresh snapshot and keeps the same link. */
+export async function publishClientReport(reportId: string): Promise<{ error?: string; url?: string }> {
+  const me = await requireStaff();
+  const supabase = await createClient();
+  const { data: r } = await supabase.from("monthly_reports").select("share_token").eq("id", reportId).single();
+  if (!r) return { error: "Record not found." };
+  try {
+    const snapshot = await buildSnapshot(reportId);
+    const token = r.share_token ?? newShareToken();
+    const { error } = await supabase
+      .from("monthly_reports")
+      .update({ published_snapshot: snapshot, share_token: token, published_at: snapshot.published_at, published_by: me.id })
+      .eq("id", reportId);
+    if (error) return { error: error.message };
+    revalidatePath(`/reports/${reportId}`);
+    return { url: `/r/${token}` };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+/** Switches the link off. Publishing again creates a new link (the old one never works again). */
+export async function unpublishClientReport(reportId: string) {
+  await requireStaff();
+  const supabase = await createClient();
+  await supabase.from("monthly_reports").update({ share_token: null, published_snapshot: null, published_at: null }).eq("id", reportId);
+  revalidatePath(`/reports/${reportId}`);
 }

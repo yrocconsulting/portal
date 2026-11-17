@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
-import { requireStaff } from "@/lib/auth";
+import { Avatar } from "@/components/avatar";
+import { requireStaff, staffName } from "@/lib/auth";
+import { avatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
 import { trackedDomain } from "@/lib/visibility";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, OPEN_STATUSES, type Client } from "@/lib/types";
@@ -13,20 +15,27 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
   const status = typeof sp.status === "string" ? sp.status : "current";
+  const lead = typeof sp.lead === "string" ? sp.lead : "";
 
   const supabase = await createClient();
   let query = supabase.from("clients").select("*").order("name");
   if (status === "current") query = query.in("status", ["onboarding", "active"]);
   else if (status !== "all") query = query.eq("status", status);
+  if (lead === "me") query = query.eq("lead_id", me.id);
+  else if (lead === "none") query = query.is("lead_id", null);
+  else if (lead) query = query.eq("lead_id", lead);
   if (q) {
     const safe = q.replace(/[%,()]/g, " ");
     query = query.or(`name.ilike.%${safe}%,domain.ilike.%${safe}%,city.ilike.%${safe}%,industry.ilike.%${safe}%`);
   }
-  const [{ data: clients }, { data: open }, { data: latest }] = await Promise.all([
+  const [{ data: clients }, { data: open }, { data: latest }, { data: staff }] = await Promise.all([
     query,
     supabase.from("tickets").select("client_id").in("status", OPEN_STATUSES).not("client_id", "is", null),
     supabase.from("prt_reports").select("report_date").order("report_date", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("staff").select("id, full_name, email, avatar_path").eq("active", true).order("full_name"),
   ]);
+  const photos = await avatarUrls((staff ?? []).map((s) => s.avatar_path));
+  const person = (id: string | null) => (staff ?? []).find((s) => s.id === id);
   const { data: vis } = latest
     ? await supabase.from("prt_site_results").select("domain, visibility").eq("report_date", latest.report_date)
     : { data: [] as { domain: string; visibility: number }[] };
@@ -51,7 +60,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
         </div>
       </div>
 
-      <form className="card grid gap-3 p-3 sm:grid-cols-[2fr_1fr_auto]">
+      <form className="card grid gap-3 p-3 sm:grid-cols-[2fr_1fr_1fr_auto]">
         <input name="q" defaultValue={q} placeholder="Search name, domain, city or industry" className="field" />
         <select name="status" defaultValue={status} className="field">
           <option value="current">Active clients</option>
@@ -59,6 +68,16 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
           {CLIENT_STATUSES.map((s) => (
             <option key={s} value={s}>
               {CLIENT_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+        <select name="lead" defaultValue={lead} className="field">
+          <option value="">Any lead</option>
+          <option value="me">My clients</option>
+          <option value="none">No lead</option>
+          {(staff ?? []).map((s) => (
+            <option key={s.id} value={s.id}>
+              {staffName(s)}
             </option>
           ))}
         </select>
@@ -71,6 +90,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold tracking-wide text-muted uppercase">
                 <th className="min-w-72 px-4 py-2.5">Client</th>
+                <th className="px-4 py-2.5">Lead</th>
                 <th className="px-4 py-2.5">Domain</th>
                 <th className="px-4 py-2.5">Industry</th>
                 <th className="px-4 py-2.5">Status</th>
@@ -87,6 +107,19 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                       {c.name}
                       {c.white_label && <WhiteLabelBadge />}
                     </Link>
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3">
+                    {(() => {
+                      const p = person(c.lead_id);
+                      return p ? (
+                        <span className="flex items-center gap-2">
+                          <Avatar name={staffName(p)} url={p.avatar_path ? photos[p.avatar_path] : null} size={22} />
+                          {staffName(p).split(" ")[0]}
+                        </span>
+                      ) : (
+                        <span className="text-muted/50">none</span>
+                      );
+                    })()}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{c.domain}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-muted">{c.industry ?? c.city}</td>

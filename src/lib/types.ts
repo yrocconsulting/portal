@@ -82,6 +82,8 @@ export type Client = {
   tracking_domain: string | null;
   gsc_site_url: string | null;
   package_id: string | null;
+  lead_id: string | null;
+  account_manager_id: string | null;
   created_at: string;
 };
 

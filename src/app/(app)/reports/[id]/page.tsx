@@ -10,7 +10,9 @@ import { monthLabel, type Results } from "@/lib/reports";
 import { createClient } from "@/lib/supabase/server";
 import { deleteReport } from "../actions";
 import { ResultsCard } from "../results-card";
+import { headers } from "next/headers";
 import { ReportButtons } from "./buttons";
+import { ClientReportCard } from "./client-report-card";
 import { ReportEditor, type EditorAction, type EditorItem } from "./editor";
 
 export const metadata: Metadata = { title: "Monthly report" };
@@ -36,6 +38,9 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
   const readOnly = r.status === "complete";
   const p = progress((items ?? []) as EditorItem[], (actions ?? []).length);
   const month = (r.month as string).slice(0, 7);
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  const changedSincePublish = !!r.published_at && !!r.content_changed_at && r.content_changed_at > r.published_at;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -78,6 +83,19 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
       {(items ?? []).length === 0 && (
         <p className="card p-4 text-sm text-muted">This record has no deliverables because the client had no package when it was started. Set their package, then delete and restart this month.</p>
       )}
+
+      <ClientReportCard
+        origin={origin}
+        reportId={r.id}
+        note={r.client_note ?? ""}
+        token={r.share_token}
+        publishedAt={r.published_at}
+        publishedBy={who(r.published_by)}
+        views={r.share_views ?? 0}
+        lastViewed={r.share_last_viewed}
+        whiteLabel={client.white_label}
+        changedSincePublish={changedSincePublish}
+      />
 
       <ReportEditor
         report={r}

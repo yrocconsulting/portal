@@ -5,7 +5,8 @@ import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
 
 // Machine endpoints check their own secrets: /api/email/* (Microsoft), /api/cron/* (Vercel Cron),
 // /api/prt/* (the website's weekly job).
-const PUBLIC_PATHS = ["/login", "/auth/", "/api/email/", "/api/cron/", "/api/prt/"];
+// /r/<token> is a published client report: readable by anyone with the secret link.
+const PUBLIC_PATHS = ["/login", "/auth/", "/api/email/", "/api/cron/", "/api/prt/", "/r/"];
 
 /** Refreshes the Supabase session on every request and sends signed-out visitors to /login. */
 export async function proxy(request: NextRequest) {

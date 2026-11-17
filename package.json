@@ -17,7 +17,9 @@
     "test:e2e:visibility": "node tests/e2e-visibility.cjs",
     "test:e2e:profiles": "node tests/e2e-profiles.cjs",
     "test:e2e:gsc": "node tests/e2e-gsc.cjs",
-    "test:e2e:reports": "node tests/e2e-reports.cjs"
+    "test:e2e:reports": "node tests/e2e-reports.cjs",
+    "test:e2e:client-report": "node tests/e2e-client-report.cjs",
+    "test:e2e:leads": "node tests/e2e-leads.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

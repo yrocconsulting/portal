@@ -149,6 +149,13 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
     }
   }
 
+  // Default the ticket to the client's lead, if they have one.
+  let assigneeId: string | null = null;
+  if (clientId) {
+    const { data: cl } = await db.from("clients").select("lead_id").eq("id", clientId).single();
+    assigneeId = (cl?.lead_id as string | null) ?? null;
+  }
+
   const description = [
     parsed.note && `Note from ${forwarder.full_name ?? forwarder.email}:\n${parsed.note}`,
     who && `From: ${who}`,
@@ -167,6 +174,7 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
       type: "request",
       source: "email",
       created_by: forwarder.id,
+      assignee_id: assigneeId,
     })
     .select("id, number, title")
     .single();

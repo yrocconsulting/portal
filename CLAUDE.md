@@ -45,6 +45,10 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   items into `report_items`, so editing a package never changes past months. Complete = archived and
   read-only (server actions refuse edits); only admins reopen or delete. `wins` is captured for a
   future client-facing report.
+- Client reports: `buildSnapshot()` (`src/lib/client-report.ts`) is the only thing that decides what a
+  client sees; keep it client-safe. Public page `/r/[token]` uses the anonymous key and the
+  `get_shared_report()` function, never the secret key. White label (`brand: "none"`) must never
+  render "Yroc" anywhere, including titles and metadata.
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

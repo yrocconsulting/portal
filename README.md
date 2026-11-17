@@ -50,7 +50,15 @@ Microsoft 365 or an emailed link; only invited email addresses get in.
   priorities and organic leads; and a saved Google Search + AI visibility snapshot. **Mark complete**
   archives the month read-only (admins can reopen). Print view at `/reports/[id]/print`.
 
-Coming next: client-facing monthly report built from these records, Claude-assisted tasks (drafts that a person approves).
+- **Client reports:** from a monthly record, **Publish** takes a client-safe snapshot (wins, Google and
+  AI results with charts, completed work with links, next month's plan; never internal notes,
+  unfinished items, staff names or prices) and gives a secret link `/r/<token>` to send yourself.
+  Update keeps the link; Turn off kills it. White-label clients' reports carry no Yroc name or logo.
+- **Client leads:** each client can have a Lead (fulfillment) and an Account manager. New tickets,
+  emailed tickets and onboarding default to the lead; "My clients" filters on Clients and Monthly
+  reports.
+
+Coming next: Claude-assisted tasks (drafts that a person approves).
 
 ## Local development
 

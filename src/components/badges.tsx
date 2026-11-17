@@ -44,7 +44,7 @@ export function WhiteLabelBadge() {
   return (
     <span
       title="White-label client: never name them on the website or in case studies."
-      className="inline-flex items-center rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold tracking-wider text-green uppercase"
+      className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-ink px-2 py-0.5 text-[10px] font-bold tracking-wider text-green uppercase"
     >
       White label
     </span>

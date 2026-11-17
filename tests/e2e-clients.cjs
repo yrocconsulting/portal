@@ -163,6 +163,24 @@ async function signIn(page, email) {
   await page.waitForSelector("text=Tr0ub4dor&3");
   ok(true, "editing without a new password keeps the old one");
 
+  // Archive keeps everything but leaves the active list; restore brings it back.
+  await page.goto(sunnyUrl);
+  page.once("dialog", (d) => d.accept());
+  await page.click("button:has-text('Archive client')");
+  await page.waitForSelector("button:has-text('Restore to active clients')");
+  ok((await page.textContent("main")).includes("WordPress admin"), "archived client keeps details and logins");
+  await page.goto(BASE + "/clients");
+  ok(!(await page.textContent("main")).includes("Sunny Roofing"), "archived client hidden from active list");
+  await page.goto(BASE + "/clients?status=former");
+  ok((await page.textContent("main")).includes("Sunny Roofing"), "archived client listed under Archived");
+  await page.goto(BASE + "/tickets/new");
+  ok(!(await page.textContent("#client_id")).includes("Sunny Roofing"), "archived client not offered for new tickets");
+  await page.goto(sunnyUrl);
+  await page.click("button:has-text('Restore to active clients')");
+  await page.waitForSelector("button:has-text('Archive client')");
+  await page.goto(BASE + "/clients");
+  ok((await page.textContent("main")).includes("Sunny Roofing"), "restore returns it to the active list");
+
   await browser.close();
   console.log("CLIENTS E2E PASSED");
 })().catch((e) => {

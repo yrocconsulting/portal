@@ -30,7 +30,7 @@ export const CLIENT_STATUS_LABEL: Record<ClientStatus, string> = {
   onboarding: "Onboarding",
   active: "Active",
   paused: "Paused",
-  former: "Former",
+  former: "Archived",
 };
 
 /** Services Yroc sells (matches the website's service catalog). */

@@ -51,7 +51,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="mx-auto max-w-[1440px] space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Tickets</h1>
         <Link href="/tickets/new" className="btn-green">

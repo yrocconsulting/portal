@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { credentialsReady } from "@/lib/crypto";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { CLIENT_STATUS_LABEL, LINK_FIELDS, OPEN_STATUSES, type Client, type Contact, type Credential, type TicketRow } from "@/lib/types";
-import { deleteClientRecord } from "../actions";
+import { deleteClientRecord, setArchived } from "../actions";
 import { ClientForm } from "../client-form";
 import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
@@ -77,6 +77,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold">{c.name}</h1>
             {c.white_label && <WhiteLabelBadge />}
+            {c.status === "former" && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold tracking-wider text-slate-700 uppercase">Archived</span>}
           </div>
           <p className="mt-1 text-sm text-muted">
             {[CLIENT_STATUS_LABEL[c.status], c.city, c.domain, c.white_label && c.partner ? `through ${c.partner}` : null].filter(Boolean).join(" · ")}
@@ -203,10 +204,22 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
             </section>
           )}
 
+          <form action={setArchived}>
+            <input type="hidden" name="id" value={c.id} />
+            <input type="hidden" name="archive" value={c.status === "former" ? "0" : "1"} />
+            {c.status === "former" ? (
+              <button className="btn-ghost w-full text-xs">Restore to active clients</button>
+            ) : (
+              <ConfirmButton message="Archive this client? They leave the active list, but their details, logins and tickets are kept." className="btn-ghost w-full text-xs">
+                Archive client
+              </ConfirmButton>
+            )}
+          </form>
+
           {me.role === "admin" && (
             <form action={deleteClientRecord}>
               <input type="hidden" name="id" value={c.id} />
-              <ConfirmButton message="Delete this client? Their tickets stay but lose the client link." className="btn-danger w-full text-xs">Delete client</ConfirmButton>
+              <ConfirmButton message="Permanently delete this client and all their details and logins? Their tickets stay but lose the client link. To keep the information, use Archive instead." className="btn-danger w-full text-xs">Delete client</ConfirmButton>
             </form>
           )}
         </aside>

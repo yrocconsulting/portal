@@ -27,7 +27,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
   (open ?? []).forEach((t) => openBy.set(t.client_id as string, (openBy.get(t.client_id as string) ?? 0) + 1));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="mx-auto max-w-[1440px] space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Clients</h1>
         <div className="flex gap-2">
@@ -43,9 +43,9 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
       </div>
 
       <form className="card grid gap-3 p-3 sm:grid-cols-[2fr_1fr_auto]">
-        <input name="q" defaultValue={q} placeholder="Search name, domain or city" className="field" />
+        <input name="q" defaultValue={q} placeholder="Search name, domain, city or industry" className="field" />
         <select name="status" defaultValue={status} className="field">
-          <option value="current">Onboarding and active</option>
+          <option value="current">Active clients</option>
           <option value="all">All clients</option>
           {CLIENT_STATUSES.map((s) => (
             <option key={s} value={s}>
@@ -61,12 +61,12 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line text-left text-xs font-semibold tracking-wide text-muted uppercase">
-                <th className="px-4 py-2.5">Client</th>
+                <th className="min-w-72 px-4 py-2.5">Client</th>
                 <th className="px-4 py-2.5">Domain</th>
                 <th className="px-4 py-2.5">Industry</th>
                 <th className="px-4 py-2.5">Status</th>
                 <th className="px-4 py-2.5">Services</th>
-                <th className="px-4 py-2.5 text-right">Open tickets</th>
+                <th className="whitespace-nowrap px-4 py-2.5 text-right">Open tickets</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -78,8 +78,8 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                       {c.white_label && <WhiteLabelBadge />}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted">{c.domain}</td>
-                  <td className="px-4 py-3 text-muted">{c.industry ?? c.city}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted">{c.domain}</td>
+                  <td className="whitespace-nowrap px-4 py-3 text-muted">{c.industry ?? c.city}</td>
                   <td className="px-4 py-3">{CLIENT_STATUS_LABEL[c.status]}</td>
                   <td className="max-w-xs truncate px-4 py-3 text-muted" title={c.services.join(", ")}>
                     {c.services.join(", ")}

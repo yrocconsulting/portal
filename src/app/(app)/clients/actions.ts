@@ -125,3 +125,14 @@ export async function deleteClientRecord(fd: FormData) {
   revalidatePath("/", "layout");
   redirect("/clients");
 }
+
+/** Archive hides a client from the active lists and pickers; everything is kept. Restore brings it back. */
+export async function setArchived(fd: FormData) {
+  await requireStaff();
+  const id = str(fd, "id");
+  if (!id) return;
+  const archive = fd.get("archive") === "1";
+  const supabase = await createClient();
+  await supabase.from("clients").update({ status: archive ? "former" : "active" }).eq("id", id);
+  revalidatePath("/", "layout");
+}

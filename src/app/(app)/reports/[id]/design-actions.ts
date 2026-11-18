@@ -29,7 +29,7 @@ export async function saveDesign(reportId: string, input: { hero_title: string; 
   const gsc_display = ["auto", "show", "hide"].includes(input.gsc_display) ? input.gsc_display : "auto";
   const { error: e } = await db
     .from("monthly_reports")
-    .update({ hero_title: input.hero_title.trim().replace(/\s*—\s*/g, ", ").slice(0, 200) || null, gsc_display, content_changed_at: new Date().toISOString() })
+    .update({ hero_title: input.hero_title.trim().replace(/\s*\u2014\s*/g, ", ").slice(0, 200) || null, gsc_display, content_changed_at: new Date().toISOString() })
     .eq("id", reportId);
   return e ? { error: e.message } : done(reportId);
 }
@@ -104,7 +104,7 @@ export async function saveQuote(reportId: string, id: string | null, q: { platfo
     platform: q.platform,
     prompt: q.prompt.trim().slice(0, 300) || null,
     quote: q.quote.trim().slice(0, 1200),
-    note: q.note.trim().replace(/\s*—\s*/g, ", ").slice(0, 300) || null,
+    note: q.note.trim().replace(/\s*\u2014\s*/g, ", ").slice(0, 300) || null,
     cited_urls: q.cited_urls
       .split(/[\s,]+/)
       .map((u) => u.trim())

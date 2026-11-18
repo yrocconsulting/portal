@@ -34,6 +34,17 @@ export async function checkinStates(clientIds: string[]): Promise<Map<string, Ch
   return out;
 }
 
+/** At most one reminder (check-in or press release) answered per person per day. */
+export async function answeredNudgeToday(staffId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const today = todayCentral();
+  const [{ data: a }, { data: b }] = await Promise.all([
+    supabase.from("client_touchpoints").select("created_at").eq("staff_id", staffId).eq("via_nudge", true).order("created_at", { ascending: false }).limit(1),
+    supabase.from("nudge_answers").select("created_at").eq("staff_id", staffId).order("created_at", { ascending: false }).limit(1),
+  ]);
+  return [a?.[0], b?.[0]].some((r) => r && centralDay.format(new Date(r.created_at)) === today);
+}
+
 type ClientForNudge = { id: string; name: string; status: string; account_manager_id: string | null; checkin_days: number | null; created_at: string };
 
 /**
@@ -43,17 +54,8 @@ type ClientForNudge = { id: string; name: string; status: string; account_manage
 export async function pickNudge(staffId: string, clients: ClientForNudge[]): Promise<{ client: ClientForNudge; daysSince: number | null } | null> {
   const mine = clients.filter((c) => c.account_manager_id === staffId && c.checkin_days && (c.status === "active" || c.status === "onboarding"));
   if (!mine.length) return null;
-  const supabase = await createClient();
   const today = todayCentral();
-  // At most one reminder answered per day.
-  const { data: answered } = await supabase
-    .from("client_touchpoints")
-    .select("created_at")
-    .eq("staff_id", staffId)
-    .eq("via_nudge", true)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  if (answered?.[0] && new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date(answered[0].created_at)) === today) return null;
+  if (await answeredNudgeToday(staffId)) return null;
 
   const states = await checkinStates(mine.map((c) => c.id));
   const due = mine

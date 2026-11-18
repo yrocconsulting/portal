@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
 import { CheckinNudge } from "@/components/checkin-nudge";
+import { answeredNudgeToday } from "@/lib/checkins";
+import { pickPressReleaseNudge, prRecorded, PR_ITEM_PATTERN, PR_REMIND_FROM_DAY } from "@/lib/press-release";
 import { checkinStates, pickNudge } from "@/lib/checkins";
 import { TicketTable } from "@/components/ticket-table";
 import { requireStaff, staffName } from "@/lib/auth";
@@ -37,7 +39,7 @@ export default async function Dashboard() {
     supabase.from("tickets").select("status, client_id, due_date").in("status", OPEN_STATUSES),
     supabase
       .from("clients")
-      .select("id, name, status, white_label, lead_id, account_manager_id, domain, tracking_domain, checkin_days, created_at")
+      .select("id, name, status, white_label, lead_id, account_manager_id, domain, tracking_domain, checkin_days, created_at, package_id")
       .or(`lead_id.eq.${me.id},account_manager_id.eq.${me.id}`)
       .neq("status", "former")
       .order("name"),
@@ -45,7 +47,10 @@ export default async function Dashboard() {
   ]);
 
   const myClients = myClientsRes.data ?? [];
-  const nudge = await pickNudge(me.id, myClients);
+  // One gentle reminder at a time: a press release still missing after the 15th comes first, then check-ins.
+  const answered = await answeredNudgeToday(me.id);
+  const prClient = answered ? null : await pickPressReleaseNudge(me.id, myClients, today);
+  const nudge = prClient ? { kind: "press_release" as const, client: prClient, daysSince: null } : answered ? null : await pickNudge(me.id, myClients).then((n) => (n ? { kind: "checkin" as const, ...n } : null));
   const contact = await checkinStates(myClients.filter((c) => c.account_manager_id === me.id).map((c) => c.id));
   const ids = myClients.map((c) => c.id);
   const domains = myClients.map((c) => trackedDomain(c)).filter((d): d is string => !!d);
@@ -56,12 +61,19 @@ export default async function Dashboard() {
       : Promise.resolve({ data: [] }),
   ]);
   const reportIds = (reports ?? []).map((r) => r.id);
-  const [{ data: items }, { data: actions }] = reportIds.length
+  const [{ data: items }, { data: actions }, { data: prItems }] = reportIds.length
     ? await Promise.all([
         supabase.from("report_items").select("report_id, kind, status, count, target").in("report_id", reportIds),
         supabase.from("report_actions").select("report_id").in("report_id", reportIds),
+        supabase.from("report_items").select("report_id, status, links, notes").in("report_id", reportIds).ilike("name", PR_ITEM_PATTERN),
       ])
-    : [{ data: [] }, { data: [] }];
+    : [{ data: [] }, { data: [] }, { data: [] }];
+  const afterMidMonth = Number(today.slice(8, 10)) >= PR_REMIND_FROM_DAY;
+  const pkgIds = [...new Set(myClients.map((c) => c.package_id).filter((p): p is string => !!p))];
+  const { data: pkgPr } = pkgIds.length
+    ? await supabase.from("package_items").select("package_id").in("package_id", pkgIds).ilike("name", PR_ITEM_PATTERN)
+    : { data: [] as { package_id: string }[] };
+  const pkgHasPr = new Set((pkgPr ?? []).map((x) => x.package_id));
 
   const openTickets = open.data ?? [];
   const counts = OPEN_STATUSES.map((s) => ({ s, n: openTickets.filter((t) => t.status === s).length }));
@@ -133,7 +145,7 @@ export default async function Dashboard() {
                       <Link href={`/clients/${c.id}`} className="font-semibold hover:text-green-d">
                         <span className="block truncate">{c.name}</span>
                       </Link>
-                      {nudge && nudge.client.id === c.id && <CheckinNudge clientId={c.id} clientName={c.name} daysSince={nudge.daysSince} />}
+                      {nudge && nudge.client.id === c.id && <CheckinNudge kind={nudge.kind} clientId={c.id} clientName={c.name} daysSince={nudge.daysSince} />}
                     </span>
                     {c.white_label && <WhiteLabelBadge />}
                   </div>
@@ -142,6 +154,13 @@ export default async function Dashboard() {
                     {c.account_manager_id === me.id && (() => {
                       const d = contact.get(c.id)?.daysSince;
                       return d === undefined || d === null ? " · no contact logged" : ` · last contact ${d === 0 ? "today" : `${d}d ago`}`;
+                    })()}
+                    {(() => {
+                      if (c.lead_id !== me.id) return null;
+                      if (!r) return afterMidMonth && c.package_id && pkgHasPr.has(c.package_id) ? " · press release not yet" : null;
+                      const pr = (prItems ?? []).filter((i) => i.report_id === r.id);
+                      if (!pr.length) return null;
+                      return pr.some(prRecorded) ? " · press release in" : afterMidMonth ? " · press release not yet" : null;
                     })()}
                     {c.status === "onboarding" && " · Onboarding"}
                     {c.status === "paused" && " · Paused"}

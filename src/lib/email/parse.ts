@@ -117,3 +117,58 @@ export function parseForward(subject: string, body: string, ownDomains: string[]
 export function clip(text: string, max = 20000): string {
   return text.length > max ? text.slice(0, max) + "\n\n[trimmed]" : text;
 }
+
+export type ClientRef = { id: string; name: string; domain: string | null; tracking_domain?: string | null };
+
+const LEGAL_SUFFIX = /[\s,]+(llc|l\.l\.c\.?|inc\.?|incorporated|co\.?|company|corp\.?|corporation|ltd\.?|pllc|llp|lp)$/i;
+
+/** Lowercase words separated by single spaces; keeps dots inside words so domains survive. */
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/https?:\/\//g, " ")
+    .replace(/\bwww\./g, "")
+    .replace(/[’']/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9.]+/g, " ")
+    .replace(/\.(?=\s|$)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** The ways a client is written in an email: full name, name without LLC/Inc, its domains. */
+export function clientKeys(c: ClientRef): string[] {
+  const keys = new Set<string>();
+  const name = normalize(c.name);
+  keys.add(name);
+  keys.add(normalize(c.name.replace(LEGAL_SUFFIX, "")));
+  for (const d of [c.domain, c.tracking_domain]) {
+    if (!d) continue;
+    const dom = normalize(d);
+    keys.add(dom);
+    const stem = dom.split(".")[0];
+    if (stem.length >= 6) keys.add(stem);
+  }
+  return [...keys].filter((k) => k.length >= 4);
+}
+
+/**
+ * Finds the one client named in the email, checking each text in order (subject first). A client
+ * whose name contains another's wins ("Atlas Real Estate Inspections" over "Atlas"). If two
+ * unrelated clients are named in the same place, nothing is guessed.
+ */
+export function findClientInText(texts: (string | null | undefined)[], clients: ClientRef[]): ClientRef | null {
+  const keyed = clients.map((c) => ({ c, keys: clientKeys(c) }));
+  for (const t of texts) {
+    if (!t) continue;
+    const hay = ` ${normalize(t)} `;
+    const hits = keyed
+      .map(({ c, keys }) => ({ c, key: keys.filter((k) => hay.includes(` ${k} `)).sort((a, b) => b.length - a.length)[0] }))
+      .filter((h): h is { c: ClientRef; key: string } => !!h.key)
+      .sort((a, b) => b.key.length - a.key.length);
+    if (!hits.length) continue;
+    const [top, ...rest] = hits;
+    return rest.every((h) => h.key.length < top.key.length && ` ${top.key} `.includes(` ${h.key} `)) ? top.c : null;
+  }
+  return null;
+}

@@ -2,6 +2,7 @@
 // Assumes tests/e2e.cjs already ran (admin@yroc.test exists, client FrigiServe with domain frigiserve.com,
 // contact pat@frigiserve.com, ticket #1001) and the app runs with the MS_* test settings.
 const { chromium } = require("playwright");
+const { execSync } = require("child_process");
 const BASE = "http://127.0.0.1:3000";
 const MAIL = "http://127.0.0.1:54324";
 const GRAPH = "http://127.0.0.1:4010";
@@ -68,6 +69,9 @@ async function latestLink(email) {
   // 5. Unknown client forwarded by staff (no client match).
   await add({ from: "admin@yroc.test", subject: "FW: Quote request", body: "From: Someone <someone@newprospect.com>\nSubject: Quote request\n\nHow much for a website?" });
 
+  // 8. A note about a client from a sender we don't know: the client is named in the subject.
+  execSync(`psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -qtAc "update clients set lead_id = (select id from staff where email='member@yroc.test') where name='FrigiServe Cold Storage'"`);
+  await add({ from: "admin@yroc.test", subject: "FW: FrigiServe Cold Storage gallery refresh", body: "From: Sam Vendor <sam@photostudio.biz>\nSubject: Photos ready\n\nThe new photos are ready." });
   // 6. Spoofed staff address from outside the organisation.
   await add({ from: "admin@yroc.test", authAs: "Anonymous", subject: "FW: Wire money", body: "From: Boss <boss@evil.com>\nSubject: Wire money\n\nNow." });
   // 7. Genuine internal forward carries the Internal stamp.
@@ -84,7 +88,7 @@ async function latestLink(email) {
   // Run intake from the Inbox page.
   await page.goto(BASE + "/inbox");
   await page.click("text=Check mailbox now");
-  await page.waitForSelector("text=/Checked 7 new emails/", { timeout: 30000 });
+  await page.waitForSelector("text=/Checked 8 new emails/", { timeout: 30000 });
   log("result:", (await page.textContent("p.text-green-d, p.text-red-700")).trim());
 
   // Second run finds nothing (marked read, no duplicates).
@@ -115,6 +119,14 @@ async function latestLink(email) {
   await page.waitForURL(/\/tickets\/\d+$/);
   ok((await page.textContent("main")).includes("Lee New"), "new contact created from client domain");
 
+  // #8 client named in the subject (sender unknown), assigned to the client's lead
+  await page.goto(BASE + "/tickets?q=Photos+ready&status=all");
+  await page.click("tbody tr a >> nth=0");
+  await page.waitForURL(/\/tickets\/\d+$/);
+  const t8 = await page.textContent("main");
+  ok(t8.includes("FrigiServe Cold Storage"), "client found by name in the subject");
+  ok(execSync(`psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -qtAc "select s.email from tickets t join staff s on s.id=t.assignee_id where t.title='Photos ready'"`).toString().trim() === "member@yroc.test", "assigned to the client's lead");
+
   // #3 comment on #1001
   await page.goto(BASE + "/tickets/1001");
   const t3 = await page.textContent("main");
@@ -129,7 +141,8 @@ async function latestLink(email) {
 
   // Confirmations were emailed to the forwarder from no-reply.
   const st = await fetch(`${GRAPH}/__test/state`).then((r) => r.json());
-  ok(st.sent.length === 5, `5 confirmations sent (got ${st.sent.length})`);
+  ok(st.sent.length === 6, `6 confirmations sent (got ${st.sent.length})`);
+  ok(st.sent.some((m) => /found by name in the email/.test(m.body.content) && /assigned to/.test(m.body.content)), "confirmation says the client was found by name and who it went to");
   ok(st.sent.every((m) => m.from === "noreply@yroc.test"), "confirmations come from no-reply");
   ok(st.sent.some((m) => /No client matched someone@newprospect.com/.test(m.body.content)), "no-client confirmation explains next step");
   ok(st.messages.every((m) => m.isRead), "all messages marked read");

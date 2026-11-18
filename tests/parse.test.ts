@@ -90,3 +90,49 @@ test("helpers", () => {
   assert.deepEqual(parseParty("Pat <PAT@x.com>"), { name: "Pat", email: "pat@x.com" });
   assert.equal(parseParty("no email here"), null);
 });
+
+import { findClientInText } from "../src/lib/email/parse.ts";
+
+const CLIENTS = [
+  { id: "1", name: "Riker Roofing, LLC", domain: "rikerroofing.com" },
+  { id: "2", name: "Atlas", domain: "atlas.com" },
+  { id: "3", name: "Atlas Real Estate Inspections", domain: "atlasinspects.com" },
+  { id: "4", name: "Smith & Sons Plumbing", domain: null },
+  { id: "5", name: "BTAC", domain: "btac.org" },
+  { id: "6", name: "Joe's Pizza", domain: null },
+];
+
+test("client named in the subject", () => {
+  assert.equal(findClientInText(["Riker Roofing: update hours", "body"], CLIENTS)?.id, "1");
+});
+
+test("name without LLC, in the body, ending a sentence", () => {
+  assert.equal(findClientInText(["Quick question", "Can we add a page for Riker Roofing."], CLIENTS)?.id, "1");
+});
+
+test("domain or website link in the body", () => {
+  assert.equal(findClientInText(["Fwd: site", "See https://www.rikerroofing.com/contact"], CLIENTS)?.id, "1");
+  assert.equal(findClientInText(["Fwd: site", "the rikerroofing site is down"], CLIENTS)?.id, "1");
+});
+
+test("longer name wins over a shorter one it contains", () => {
+  assert.equal(findClientInText(["Atlas Real Estate Inspections GBP"], CLIENTS)?.id, "3");
+});
+
+test("ampersand, apostrophes and case", () => {
+  assert.equal(findClientInText(["smith and sons plumbing new photos"], CLIENTS)?.id, "4");
+  assert.equal(findClientInText(["Joes pizza menu"], CLIENTS)?.id, "6");
+  assert.equal(findClientInText(["btac request"], CLIENTS)?.id, "5");
+});
+
+test("subject is checked before the body", () => {
+  assert.equal(findClientInText(["BTAC: new blog", "also mentioned Riker Roofing"], CLIENTS)?.id, "5");
+});
+
+test("two unrelated clients in the same place: no guess", () => {
+  assert.equal(findClientInText(["Riker Roofing and BTAC"], CLIENTS), null);
+});
+
+test("no partial-word matches", () => {
+  assert.equal(findClientInText(["Atlassian invoice", "the btacx thing"], CLIENTS), null);
+});

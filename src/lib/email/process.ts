@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAttachments, listUnread, mailConfig, markRead, sendMail, upsertSubscription, type GraphMessage, type MailConfig } from "./graph";
-import { clip, parseForward, ticketNumberFromSubject } from "./parse";
+import { cleanSubject, clip, findClientInText, parseForward, ticketNumberFromSubject, type ClientRef } from "./parse";
 
 type Admin = ReturnType<typeof createAdminClient>;
 type Staff = { id: string; email: string; full_name: string | null };
@@ -149,12 +149,26 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
     }
   }
 
+  // No match by sender: look for a client named in the subject, then the forwarder's note, then the email.
+  let foundByName = false;
+  if (!clientId) {
+    const { data: all } = await db.from("clients").select("id, name, domain, tracking_domain").neq("status", "former");
+    const hit = findClientInText([cleanSubject(subject), parsed.subject, parsed.note, parsed.body], (all ?? []) as ClientRef[]);
+    if (hit) {
+      clientId = hit.id;
+      clientName = hit.name;
+      foundByName = true;
+    }
+  }
+
   // Default the ticket to the client's lead, if they have one.
   let assigneeId: string | null = null;
   if (clientId) {
     const { data: cl } = await db.from("clients").select("lead_id").eq("id", clientId).single();
     assigneeId = (cl?.lead_id as string | null) ?? null;
   }
+  const lead = assigneeId ? staff.find((x) => x.id === assigneeId) : null;
+  const assigneeName = lead ? lead.full_name ?? lead.email : null;
 
   const description = [
     parsed.note && `Note from ${forwarder.full_name ?? forwarder.email}:\n${parsed.note}`,
@@ -187,8 +201,8 @@ async function handleMessage(db: Admin, cfg: MailConfig, staff: Staff[], msg: Gr
     .eq("id", emailId);
 
   await confirm(cfg, staff, forwarder.email, `Ticket #${ticket.number} created: ${ticket.title}`, [
-    `Ticket #${ticket.number} was created${clientName ? ` for ${clientName}` : ""}${files ? ` with ${files} file${files === 1 ? "" : "s"}` : ""}.`,
-    clientName ? "" : original ? `No client matched ${original.email}. Set the client on the ticket.` : "The original sender wasn't found in the email. Set the client on the ticket.",
+    `Ticket #${ticket.number} was created${clientName ? ` for ${clientName}` : ""}${assigneeName ? ` and assigned to ${assigneeName}` : ""}${files ? ` with ${files} file${files === 1 ? "" : "s"}` : ""}.`,
+    foundByName ? "The client was found by name in the email. If that's wrong, change it on the ticket." : clientName ? "" : original ? `No client matched ${original.email}. Set the client on the ticket.` : "The original sender wasn't found in the email. Set the client on the ticket.",
     `${siteUrl()}/tickets/${ticket.number}`,
     "",
     `To add a later email to this ticket, forward it with #${ticket.number} in the subject.`,

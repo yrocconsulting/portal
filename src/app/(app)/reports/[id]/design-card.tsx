@@ -276,7 +276,11 @@ export function DesignCard({
           {!readOnly && (
             <div className="space-y-2 rounded-lg bg-bg p-3">
               <p className="text-xs text-muted">
-                In ProRankTracker, open a prompt, copy the AI&apos;s full answer and paste it here. The exact words naming {clientName} become a quote, and any of the
+                Fastest: use the{" "}
+                <a href="/capture" target="_blank" className="font-semibold text-green-d hover:underline">
+                  ProRankTracker button
+                </a>{" "}
+                on a result pop-up. Or open a result in ProRankTracker, copy the AI&apos;s answer and paste it here. The exact words naming {clientName} become a quote, and any of the
                 client&apos;s pages it cited are listed as proof. Check it before publishing.
               </p>
               <div className="grid gap-2 sm:grid-cols-[180px_1fr]">

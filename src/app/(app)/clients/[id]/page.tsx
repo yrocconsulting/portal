@@ -12,6 +12,8 @@ import { fmtDate, fmtDateTime } from "@/lib/format";
 import { CLIENT_STATUS_LABEL, LINK_FIELDS, OPEN_STATUSES, type Client, type Contact, type Credential, type TicketRow } from "@/lib/types";
 import { deleteClientRecord, setArchived } from "../actions";
 import { ClientForm } from "../client-form";
+import { mediaUrl } from "@/lib/client-report";
+import { Branding } from "./branding";
 import { AiVisibility } from "@/components/ai-visibility";
 import { SearchConsole } from "@/components/search-console";
 import { trackedDomain } from "@/lib/visibility";
@@ -165,6 +167,8 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               </dl>
             </section>
           )}
+
+          <Branding clientId={c.id} logoUrl={c.logo_path ? mediaUrl(c.logo_path) : null} color={c.brand_color} />
 
           <details className="card group" open={false}>
             <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 font-semibold">

@@ -12,6 +12,8 @@ import { deleteReport } from "../actions";
 import { ResultsCard } from "../results-card";
 import { headers } from "next/headers";
 import { ReportButtons } from "./buttons";
+import { DesignCard, type DesignQuote } from "./design-card";
+import { gscPositive, mediaUrl } from "@/lib/client-report";
 import { ClientReportCard } from "./client-report-card";
 import { ReportEditor, type EditorAction, type EditorItem } from "./editor";
 
@@ -24,11 +26,13 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
   const supabase = await createClient();
   const { data: r } = await supabase.from("monthly_reports").select("*, client:clients(id, name, white_label)").eq("id", id).maybeSingle();
   if (!r) notFound();
-  const [{ data: items }, { data: actions }, { data: types }, { data: staff }] = await Promise.all([
+  const [{ data: items }, { data: actions }, { data: types }, { data: staff }, { data: media }, { data: quotes }] = await Promise.all([
     supabase.from("report_items").select("*").eq("report_id", id).order("position"),
     supabase.from("report_actions").select("*").eq("report_id", id).order("created_at"),
     supabase.from("action_types").select("name, category").order("position"),
     supabase.from("staff").select("id, full_name, email"),
+    supabase.from("report_media").select("id, kind, caption, path").eq("report_id", id).order("position"),
+    supabase.from("report_quotes").select("id, platform, prompt, quote, note, cited_urls").eq("report_id", id).order("position"),
   ]);
   const who = (sid: string | null) => {
     const s = (staff ?? []).find((x) => x.id === sid);
@@ -102,6 +106,19 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
         lastViewed={r.share_last_viewed}
         whiteLabel={client.white_label}
         changedSincePublish={changedSincePublish}
+      />
+
+      <DesignCard
+        reportId={r.id}
+        readOnly={readOnly}
+        heroTitle={r.hero_title ?? ""}
+        defaultTitle={`${client.name}: *${monthLabel(month).split(" ")[0]} results.*`}
+        gscDisplay={r.gsc_display ?? "auto"}
+        gscAuto={gscPositive((r.results ?? {}) as Results)}
+        hasGsc={!!((r.results ?? {}) as Results).gsc}
+        media={(media ?? []).map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, url: mediaUrl(m.path) }))}
+        quotes={(quotes ?? []) as DesignQuote[]}
+        clientName={client.name}
       />
 
       <ReportEditor

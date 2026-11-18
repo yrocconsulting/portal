@@ -104,7 +104,7 @@ async function signIn(page, email) {
   await page.fill("#summary", "Launched the blast freezing page.");
   await page.fill("#organic_leads", "6");
   ok(await page.isVisible("text=Unsaved changes"), "unsaved changes flagged");
-  await page.click("button:has-text('Save'):not(:has-text('profile'))");
+  await page.click("button:text-is('Save')");
   await page.waitForSelector("span:text-is('Saved.')");
   await page.waitForSelector("text=Unsaved changes", { state: "detached" });
   await page.reload();

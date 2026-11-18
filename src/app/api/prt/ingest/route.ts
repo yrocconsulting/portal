@@ -7,7 +7,7 @@ export const maxDuration = 60;
 const PLATFORMS = ["aio", "ai_mode", "chatgpt", "copilot", "gemini", "perplexity"];
 
 type Site = { domain: string; appearances: number; mentions: number; links: number; visibility: number; prompts: number; platforms: Record<string, number> };
-type Prompt = { domain: string; prompt: string; platforms: string[]; appearances: number; visibility: number };
+type Prompt = { domain: string; prompt: string; platforms: string[]; counts?: Record<string, number>; appearances: number; visibility: number };
 
 const int = (v: unknown) => (Number.isFinite(Number(v)) ? Math.max(0, Math.round(Number(v))) : 0);
 const dom = (v: unknown) => (typeof v === "string" && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v.trim()) ? v.trim().toLowerCase() : null);
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         domain,
         prompt: text,
         platforms: (Array.isArray(p.platforms) ? p.platforms : []).filter((x): x is string => PLATFORMS.includes(x)),
+        platform_counts: Object.fromEntries(PLATFORMS.filter((k) => int(p.counts?.[k]) > 0).map((k) => [k, int(p.counts?.[k])])),
         appearances: int(p.appearances),
         visibility: Math.min(100, int(p.visibility)),
       };

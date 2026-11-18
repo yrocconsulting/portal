@@ -75,8 +75,8 @@ async function publish(page) {
       report_date: "2026-11-16",
       sites: [{ domain: "frigiserve.com", appearances: 11, mentions: 6, links: 5, visibility: 90, prompts: 3, platforms: { chatgpt: 7, gemini: 4 } }],
       prompts: [
-        { domain: "frigiserve.com", prompt: "Who offers blast freezing near Fort Worth?", platforms: ["chatgpt", "gemini"], appearances: 7, visibility: 100 },
-        { domain: "frigiserve.com", prompt: "Best cold storage in DFW?", platforms: ["chatgpt", "gemini", "aio"], appearances: 4, visibility: 75 },
+        { domain: "frigiserve.com", prompt: "Who offers blast freezing near Fort Worth?", platforms: ["chatgpt", "gemini"], counts: { chatgpt: 5, gemini: 2 }, appearances: 7, visibility: 100 },
+        { domain: "frigiserve.com", prompt: "Best cold storage in DFW?", platforms: ["chatgpt", "gemini", "aio"], counts: { chatgpt: 2, gemini: 1, aio: 1 }, appearances: 4, visibility: 75 },
         { domain: "frigiserve.com", prompt: "Cheapest freezer rental?", platforms: [], appearances: 0, visibility: 0 },
       ],
     }),
@@ -86,6 +86,20 @@ async function publish(page) {
   const page = await browser.newPage({ viewport: { width: 1300, height: 900 } });
   page.on("dialog", (d) => d.accept());
   await signIn(page, "admin@yroc.test");
+
+  // A tiny PNG for logo and screenshot uploads.
+  const png = path.join(OUT, "tiny.png");
+  require("fs").writeFileSync(png, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
+
+  // Branding: FrigiServe's logo and color.
+  await page.goto(BASE + "/clients?q=FrigiServe");
+  await page.click("tbody a >> nth=0");
+  await page.waitForURL(/\/clients\/[0-9a-f-]{36}/);
+  await page.setInputFiles("section:has-text('Report branding') input[type=file]", png);
+  await page.waitForSelector("text=Logo saved.");
+  await page.fill("input[aria-label='Brand color']", "#c91f26");
+  await page.click("button:has-text('Save color')");
+  await page.waitForSelector("text=Color saved.");
 
   // Direct client: FrigiServe.
   const reportUrl = await setupMonth(page, "FrigiServe Cold Storage");
@@ -107,6 +121,28 @@ async function publish(page) {
   await page.click("button:has-text('Refresh results')");
   await page.waitForTimeout(1500);
 
+  // Design: headline, a ProRankTracker screenshot, a quote pulled from a pasted AI answer.
+  await page.fill("#hero_title", "When AI gets asked about cold storage, *it says FrigiServe.*");
+  await page.click("button:has-text('Save headline and settings')");
+  await page.waitForSelector("section:has-text('Client report design') >> text=Saved.");
+  await page.fill("input[placeholder='Caption (optional)']", "ChatGPT's answer in ProRankTracker");
+  await page.setInputFiles("section:has-text('Client report design') input[type=file]", png);
+  await page.waitForSelector("text=Added.");
+  await page.waitForSelector("[data-media]");
+  ok((await page.locator("[data-media]").count()) === 1, "screenshot added to the record");
+  await page.fill("textarea[aria-label='AI answer']", "Here are some options. FrigiServe Cold Storage is a top choice for blast freezing near Fort Worth, with food-grade facilities (https://frigiserve.com/blast-freezing). Another option is Acme Cold.");
+  await page.fill("input[aria-label='Answer prompt']", "Who offers blast freezing near Fort Worth?");
+  await page.click("button:has-text('Pull the quote')");
+  await page.waitForSelector("text=/Quote added/");
+  await page.waitForSelector("[data-quote]");
+  const qv = await page.locator("[data-quote] textarea[aria-label='Quote']").inputValue();
+  ok(qv.startsWith("FrigiServe Cold Storage is a top choice for blast freezing"), "quote is the AI's own sentence naming the client");
+  ok((await page.locator("[data-quote] textarea[aria-label='Cited pages']").inputValue()).includes("https://frigiserve.com/blast-freezing"), "client's cited page picked up");
+  await page.fill("textarea[aria-label='AI answer']", "Try Acme Cold or Polar Storage, both are great.");
+  await page.click("button:has-text('Pull the quote')");
+  await page.waitForSelector("text=This answer doesn't mention FrigiServe Cold Storage.");
+  ok(true, "answers that don't name the client are refused");
+
   await page.fill("#client_note", "Great month, thanks for the photos!");
   const link1 = await publish(page);
   ok(/\/r\/[A-Za-z0-9_-]{32,}$/.test(link1), "published with a secret link");
@@ -124,18 +160,25 @@ async function publish(page) {
   await c.goto(link1);
   const body = await c.textContent("body");
   const html = await c.content();
-  ok(body.includes("FrigiServe Cold Storage") && body.includes("November 2026 report"), "client sees their report without signing in");
+  ok(body.includes("FrigiServe Cold Storage") && body.includes("November 2026"), "client sees their report without signing in");
+  ok(body.includes("When AI gets asked about cold storage, it says FrigiServe.") && (await c.locator("h1 .hl").textContent()) === "it says FrigiServe.", "headline with the highlighted words");
+  ok((await c.locator(".cr").getAttribute("style")).includes("#c91f26"), "client's brand color used");
+  ok(await c.isVisible("img[alt='FrigiServe Cold Storage logo']"), "client's logo shown");
+  ok(body.includes("Here's what AI is telling your customers") && (await c.locator(".cr-mk").first().textContent()) === "FrigiServe Cold Storage", "AI quote with the client's name highlighted");
+  ok(body.includes("/blast-freezing") && body.includes("Built this month") && body.includes("cited by ChatGPT"), "cited page, marked as built this month");
+  ok(await c.isVisible("img[alt=\"ChatGPT's answer in ProRankTracker\"]"), "ProRankTracker screenshot shown");
+  ok(body.includes("5") && body.includes("total appearances in AI answers"), "per-platform counts on the prompt cards");
   ok(body.includes("Now recommended by ChatGPT and Gemini") && body.includes("Great month, thanks for the photos!"), "wins and message shown");
-  ok(body.includes("Blast freezing Fort Worth page") && body.includes("View it live"), "actions with links");
+  ok(body.includes("Blast freezing Fort Worth page") && (await c.isVisible("a.lk[href*='blast-freezing']")), "actions with links");
   ok(body.includes("Publish GBP content & media") && body.includes("Improve AI readability & on-page signals"), "completed client-facing tasks");
   ok(!body.includes("Review monthly performance"), "internal tasks (white rows) never shown, even when done");
   ok(body.includes("Who offers blast freezing near Fort Worth?") && !body.includes("Cheapest freezer rental?"), "only prompts AI recommends them for");
-  ok(body.includes("Clicks from Google") && (await c.isVisible("svg[aria-label^='Daily Google clicks']")), "Google results and chart");
+  ok(!(await c.isVisible("svg[aria-label^='Daily Google clicks']")) && !body.includes("More people are finding you on Google"), "Search Console hidden: clicks are down this month (auto)");
   ok(body.includes("Add a cold storage pricing guide."), "next month's plan");
   ok(!/INTERNAL: client was slow/.test(html), "internal item notes never shown");
   ok(!/Not done/.test(body) && !/Maintain schema & entity signals/.test(body), "unfinished items never shown");
   ok(!/admin@yroc\.test|Search Growth|\$3,750|3750/.test(html), "no staff, package name or price");
-  ok(await c.isVisible("img[alt='Yroc Consulting']"), "Yroc branding for direct clients");
+  ok(body.includes("Prepared by Yroc Consulting"), "Yroc credit for direct clients");
   await c.screenshot({ path: path.join(OUT, "22-client-report.png"), fullPage: true });
   const mob = await anon.newPage({ viewport: { width: 390, height: 844 } });
   await mob.goto(link1);
@@ -150,10 +193,15 @@ async function publish(page) {
   ok(!(await c.textContent("body")).includes("CHANGED AFTER PUBLISH"), "client sees the published snapshot, not live edits");
   await page.reload();
   ok(await page.isVisible("text=has changed since it was published"), "team is told the record changed since publishing");
+  await page.selectOption("#gsc_display", "show");
+  await page.click("button:has-text('Save headline and settings')");
+  await page.waitForSelector("section:has-text('Client report design') >> text=Saved.");
   const link1b = await publish(page);
   ok(link1b === link1, "update keeps the same link");
   await c.reload();
   ok((await c.textContent("body")).includes("CHANGED AFTER PUBLISH"), "update shows the latest version");
+  ok((await c.isVisible("svg[aria-label^='Daily Google clicks']")) && (await c.textContent("body")).includes("Clicks from Google"), "Search Console shown when forced on");
+  await c.screenshot({ path: path.join(OUT, "22b-client-report-gsc.png"), fullPage: true });
   await page.reload();
   ok(/opened [1-9]\d* time/.test(await page.textContent("main")), "views counted");
 

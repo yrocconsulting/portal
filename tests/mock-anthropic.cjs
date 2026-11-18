@@ -46,6 +46,13 @@ http
       if (key !== "test-key") return send(401, { type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } });
       const user = typeof body.messages[0].content === "string" ? body.messages[0].content : JSON.stringify(body.messages[0].content);
 
+      if (body.output_config?.format?.schema?.properties?.quote) {
+        // Quote extraction: the sentence naming the client, copied exactly.
+        const answer = user.split("<answer>")[1]?.split("</answer>")[0] ?? "";
+        const name = user.match(/client "([^"]+)"/)?.[1] ?? "";
+        const sentence = (answer.replace(/\s+/g, " ").match(/[^.!?]+[.!?]/g) ?? []).find((x) => x.includes(name.split(" ")[0])) ?? "";
+        return send(200, msg([{ type: "text", text: JSON.stringify({ quote: sentence.trim(), note: "Named first in the answer" }) }], "end_turn"));
+      }
       if (body.output_config?.format) {
         const p = promptsFrom(user);
         const angles = [0, 1, 2].map((i) => ({

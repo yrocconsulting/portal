@@ -16,6 +16,8 @@ import { AiVisibility } from "@/components/ai-visibility";
 import { SearchConsole } from "@/components/search-console";
 import { trackedDomain } from "@/lib/visibility";
 import { monthLabel } from "@/lib/reports";
+import { checkinStates } from "@/lib/checkins";
+import { LogCheckin } from "./log-checkin";
 import { Credentials } from "./credentials";
 import { AddContactForm, DeleteContact, OnboardingForm } from "./parts";
 
@@ -72,6 +74,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
     ["Locations", c.locations],
   ].filter(([, v]) => v) as [string, React.ReactNode][];
 
+  const contactState = (await checkinStates([c.id])).get(c.id);
   return (
     <div className="mx-auto max-w-[1440px] space-y-6">
       <div className="text-sm text-muted">
@@ -100,9 +103,17 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               .join(" · ")}
           </p>
         </div>
-        <Link href={`/tickets/new?client=${c.id}`} className="btn-green">
-          + New ticket
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-muted">
+            {contactState?.daysSince === null || contactState?.daysSince === undefined
+              ? "No contact logged"
+              : `Last contact ${contactState.daysSince === 0 ? "today" : `${contactState.daysSince} day${contactState.daysSince === 1 ? "" : "s"} ago`}`}
+          </span>
+          <LogCheckin clientId={c.id} />
+          <Link href={`/tickets/new?client=${c.id}`} className="btn-green">
+            + New ticket
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">

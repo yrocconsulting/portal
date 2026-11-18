@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { WhiteLabelBadge } from "@/components/badges";
+import { CheckinNudge } from "@/components/checkin-nudge";
+import { checkinStates, pickNudge } from "@/lib/checkins";
 import { TicketTable } from "@/components/ticket-table";
 import { requireStaff, staffName } from "@/lib/auth";
 import { todayCentral } from "@/lib/format";
@@ -35,7 +37,7 @@ export default async function Dashboard() {
     supabase.from("tickets").select("status, client_id, due_date").in("status", OPEN_STATUSES),
     supabase
       .from("clients")
-      .select("id, name, status, white_label, lead_id, account_manager_id, domain, tracking_domain")
+      .select("id, name, status, white_label, lead_id, account_manager_id, domain, tracking_domain, checkin_days, created_at")
       .or(`lead_id.eq.${me.id},account_manager_id.eq.${me.id}`)
       .neq("status", "former")
       .order("name"),
@@ -43,6 +45,8 @@ export default async function Dashboard() {
   ]);
 
   const myClients = myClientsRes.data ?? [];
+  const nudge = await pickNudge(me.id, myClients);
+  const contact = await checkinStates(myClients.filter((c) => c.account_manager_id === me.id).map((c) => c.id));
   const ids = myClients.map((c) => c.id);
   const domains = myClients.map((c) => trackedDomain(c)).filter((d): d is string => !!d);
   const [{ data: reports }, { data: vis }] = await Promise.all([
@@ -123,15 +127,22 @@ export default async function Dashboard() {
               const v = visBy.get(trackedDomain(c) ?? "");
               const role = c.lead_id === me.id && c.account_manager_id === me.id ? "Lead and account manager" : c.lead_id === me.id ? "Lead" : "Account manager";
               return (
-                <li key={c.id} className="rounded-lg border border-line bg-white p-4">
+                <li key={c.id} className={`rounded-lg border bg-white p-4 ${nudge && nudge.client.id === c.id ? "border-ink" : "border-line"}`}>
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/clients/${c.id}`} className="min-w-0 font-semibold hover:text-green-d">
-                      <span className="block truncate">{c.name}</span>
-                    </Link>
+                    <span className="relative min-w-0">
+                      <Link href={`/clients/${c.id}`} className="font-semibold hover:text-green-d">
+                        <span className="block truncate">{c.name}</span>
+                      </Link>
+                      {nudge && nudge.client.id === c.id && <CheckinNudge clientId={c.id} clientName={c.name} daysSince={nudge.daysSince} />}
+                    </span>
                     {c.white_label && <WhiteLabelBadge />}
                   </div>
                   <p className="text-xs text-muted">
                     {role}
+                    {c.account_manager_id === me.id && (() => {
+                      const d = contact.get(c.id)?.daysSince;
+                      return d === undefined || d === null ? " · no contact logged" : ` · last contact ${d === 0 ? "today" : `${d}d ago`}`;
+                    })()}
                     {c.status === "onboarding" && " · Onboarding"}
                     {c.status === "paused" && " · Paused"}
                   </p>

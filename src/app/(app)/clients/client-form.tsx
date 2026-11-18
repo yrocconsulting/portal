@@ -69,6 +69,24 @@ export function ClientForm({
           <p className="mt-1 text-xs text-muted">New tickets for this client go to them by default.</p>
         </div>
         <div>
+          <label className="label" htmlFor="checkin_days">
+            Check-in reminder
+          </label>
+          <select
+            id="checkin_days"
+            name="checkin_days"
+            defaultValue={client ? (client.checkin_days === null ? "off" : String(client.checkin_days)) : "30"}
+            className="field"
+          >
+            <option value="14">After 2 weeks without contact</option>
+            <option value="30">After 30 days without contact</option>
+            <option value="60">After 60 days without contact</option>
+            <option value="90">After 90 days without contact</option>
+            <option value="off">Off</option>
+          </select>
+          <p className="mt-1 text-xs text-muted">A gentle nudge on the account manager&apos;s dashboard, one client at a time.</p>
+        </div>
+        <div>
           <label className="label" htmlFor="account_manager_id">
             Account manager
           </label>

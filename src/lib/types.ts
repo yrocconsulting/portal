@@ -85,6 +85,7 @@ export type Client = {
   lead_id: string | null;
   account_manager_id: string | null;
   monthly_fee: number | null;
+  checkin_days: number | null;
   created_at: string;
 };
 

@@ -39,6 +39,7 @@ function clientFields(fd: FormData) {
     tracking_domain: cleanDomain(str(fd, "tracking_domain")),
     package_id: str(fd, "package_id"),
     lead_id: str(fd, "lead_id"),
+    checkin_days: str(fd, "checkin_days") === "off" ? null : Math.max(1, Math.min(365, Number(str(fd, "checkin_days")) || 30)),
     account_manager_id: str(fd, "account_manager_id"),
     links: Object.fromEntries(
       LINK_FIELDS.map(([k]) => [k, str(fd, `link_${k}`)]).filter((e): e is [string, string] => !!e[1] && /^https?:\/\//i.test(e[1])),

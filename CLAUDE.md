@@ -52,6 +52,11 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - Fees: `clients.monthly_fee` is admin-only in the UI (client form, client details, Revenue page);
   `updateClientRecord` only touches it when an admin's form includes it. Not shown on the clients list. Changes are logged by trigger
   into `client_fee_history`; `snapshot_revenue()` saves the month's expected total in `revenue_months`.
+- Content drafts (`/drafts`, `src/lib/drafts/`): Claude (`MODEL` in `claude.ts`, key `ANTHROPIC_API_KEY`) suggests 3 angles from the
+  client's tracked prompts, GSC queries and wins, then writes the piece reading only the client's site (web fetch).
+  Work runs in `after()` and the page polls. Drafts are posted to a ticket for review; never published or sent.
+  Locally: `node tests/mock-anthropic.cjs` and start next with `ANTHROPIC_BASE_URL=http://127.0.0.1:4030` (the
+  sandbox sets its own ANTHROPIC_BASE_URL, which .env.local can't override).
 - Data: server components and server actions use `src/lib/supabase/server.ts`. The browser client is
   only for direct uploads to the private `attachments` bucket.
 - Schema: `supabase/migrations/` (new file per change). Ticket history is written by triggers into

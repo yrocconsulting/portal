@@ -110,6 +110,9 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
               : `Last contact ${contactState.daysSince === 0 ? "today" : `${contactState.daysSince} day${contactState.daysSince === 1 ? "" : "s"} ago`}`}
           </span>
           <LogCheckin clientId={c.id} />
+          <Link href={`/drafts/new?client=${c.id}`} className="btn-ghost py-1.5 text-xs">
+            Draft with Claude
+          </Link>
           <Link href={`/tickets/new?client=${c.id}`} className="btn-green">
             + New ticket
           </Link>

@@ -66,7 +66,14 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
             {readOnly && r.completed_at && ` · completed ${fmtDateTime(r.completed_at)} by ${who(r.completed_by)}`}
           </p>
         </div>
-        <ReportButtons id={r.id} status={r.status} isAdmin={me.role === "admin"} />
+        <div className="flex flex-wrap gap-2">
+          {r.status !== "complete" && (
+            <Link href={`/drafts/new?client=${r.client_id}&kind=press_release`} className="btn-ghost">
+              Draft PR with Claude
+            </Link>
+          )}
+          <ReportButtons id={r.id} status={r.status} isAdmin={me.role === "admin"} />
+        </div>
       </div>
 
       {readOnly && (

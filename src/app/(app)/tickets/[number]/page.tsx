@@ -227,6 +227,12 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[number
             )}
           </dl>
 
+          {t.client_id && (
+            <Link href={`/drafts/new?client=${t.client_id}&ticket=${t.id}`} className="btn-ghost w-full text-xs">
+              Draft content with Claude
+            </Link>
+          )}
+
           {me.role === "admin" && (
             <form action={deleteTicket}>
               <input type="hidden" name="id" value={t.id} />

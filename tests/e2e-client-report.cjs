@@ -122,11 +122,13 @@ async function publish(page) {
   await page.waitForTimeout(1500);
 
   // Design: headline, a ProRankTracker screenshot, a quote pulled from a pasted AI answer.
+  ok(!(await page.isVisible("#hero_title")), "design section starts minimized");
+  await page.click("[data-design] > summary");
   await page.fill("#hero_title", "When AI gets asked about cold storage, *it says FrigiServe.*");
   await page.click("button:has-text('Save headline and settings')");
-  await page.waitForSelector("section:has-text('Client report design') >> text=Saved.");
+  await page.waitForSelector("[data-design] >> text=Saved.");
   await page.fill("input[placeholder='Caption (optional)']", "ChatGPT's answer in ProRankTracker");
-  await page.setInputFiles("section:has-text('Client report design') input[type=file]", png);
+  await page.setInputFiles("[data-design] input[type=file]", png);
   await page.waitForSelector("text=Added.");
   await page.waitForSelector("[data-media]");
   ok((await page.locator("[data-media]").count()) === 1, "screenshot added to the record");
@@ -193,9 +195,11 @@ async function publish(page) {
   ok(!(await c.textContent("body")).includes("CHANGED AFTER PUBLISH"), "client sees the published snapshot, not live edits");
   await page.reload();
   ok(await page.isVisible("text=has changed since it was published"), "team is told the record changed since publishing");
+  if (!(await page.isVisible("#gsc_display"))) await page.click("[data-design] > summary");
+  ok((await page.textContent("[data-design] > summary")).includes("1 screenshot · 1 AI quote"), "minimized summary shows what's there");
   await page.selectOption("#gsc_display", "show");
   await page.click("button:has-text('Save headline and settings')");
-  await page.waitForSelector("section:has-text('Client report design') >> text=Saved.");
+  await page.waitForSelector("[data-design] >> text=Saved.");
   const link1b = await publish(page);
   ok(link1b === link1, "update keeps the same link");
   await c.reload();

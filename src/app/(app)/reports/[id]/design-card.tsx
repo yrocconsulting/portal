@@ -149,11 +149,19 @@ export function DesignCard({
   }
 
   return (
-    <section className="card">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <h2 className="font-semibold">Client report design</h2>
-        <span className="text-xs text-muted">Headline, screenshots and AI quotes. Changes show after you publish or update.</span>
-      </header>
+    <details className="card group/design" data-design>
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 group-open/design:border-b group-open/design:border-line">
+        <span>
+          <span className="font-semibold">Client report design</span>
+          <span className="ml-2 text-xs text-muted">
+            {heroTitle ? "Headline set" : "Default headline"} · {media.length} screenshot{media.length === 1 ? "" : "s"} · {quotes.length} AI quote{quotes.length === 1 ? "" : "s"}
+          </span>
+        </span>
+        <span className="text-sm text-green-d">
+          <span className="group-open/design:hidden">Show</span>
+          <span className="hidden group-open/design:inline">Hide</span>
+        </span>
+      </summary>
       <div className="space-y-6 p-4">
         <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
           <div>
@@ -207,8 +215,16 @@ export function DesignCard({
           </div>
         )}
 
-        <div className="space-y-3 border-t border-line pt-5">
-          <h3 className="text-sm font-semibold">Screenshots</h3>
+        <details className="group/shots space-y-3 border-t border-line pt-5" open={media.length < 4}>
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
+            <span>
+              Screenshots <span className="font-normal text-muted">({media.length})</span>
+            </span>
+            <span className="text-xs font-normal text-green-d">
+              <span className="group-open/shots:hidden">Show</span>
+              <span className="hidden group-open/shots:inline">Hide</span>
+            </span>
+          </summary>
           {media.length > 0 && (
             <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {media.map((m) => (
@@ -262,10 +278,18 @@ export function DesignCard({
             </div>
           )}
           <p className="text-xs text-muted">Search Console screenshots only show when the Search Console section does.</p>
-        </div>
+        </details>
 
-        <div className="space-y-3 border-t border-line pt-5">
-          <h3 className="text-sm font-semibold">What AI said about {clientName}</h3>
+        <details className="group/quotes space-y-3 border-t border-line pt-5" open={quotes.length < 3}>
+          <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
+            <span>
+              What AI said about {clientName} <span className="font-normal text-muted">({quotes.length})</span>
+            </span>
+            <span className="text-xs font-normal text-green-d">
+              <span className="group-open/quotes:hidden">Show</span>
+              <span className="hidden group-open/quotes:inline">Hide</span>
+            </span>
+          </summary>
           {quotes.length > 0 && (
             <ul className="space-y-3">
               {quotes.map((q) => (
@@ -322,8 +346,8 @@ export function DesignCard({
               </div>
             </div>
           )}
-        </div>
+        </details>
       </div>
-    </section>
+    </details>
   );
 }

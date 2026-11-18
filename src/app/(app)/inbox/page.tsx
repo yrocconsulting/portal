@@ -72,7 +72,12 @@ export default async function InboxPage() {
                 <span className="mr-2 inline-block h-2 w-2 rounded-full bg-amber-500 align-middle" />
                 Mailbox not connected yet
               </p>
-              <p className="text-muted">Microsoft 365 settings still need to be added in Vercel.</p>
+              <p className="text-muted">
+                Missing in Vercel (Production), or added without a redeploy since:{" "}
+                {["MS_TENANT_ID", "MS_MAIL_CLIENT_ID", "MS_MAIL_CLIENT_SECRET", "HELPDESK_MAILBOX"]
+                  .filter((k) => !process.env[k]?.trim())
+                  .join(", ")}
+              </p>
             </>
           )}
         </div>

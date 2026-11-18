@@ -61,7 +61,7 @@ export function CheckinNudge({ kind = "checkin", clientId, clientName, daysSince
           <p className="text-sm leading-snug">
             Has <b>{clientName}</b> had their press release this month?
           </p>
-          <p className="mt-0.5 text-xs text-white/60">Nothing on Digital PR in this month&apos;s report yet.</p>
+          <p className="mt-0.5 text-xs text-white/60">Nothing on the PR task in this month&apos;s report yet.</p>
         </>
       ) : (
         <>

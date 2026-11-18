@@ -53,14 +53,14 @@ export async function buildSnapshot(reportId: string): Promise<ClientSnapshot> {
   const month = (r.month as string).slice(0, 7);
 
   const [{ data: items }, { data: actions }] = await Promise.all([
-    supabase.from("report_items").select("section, name, kind, status, count, target, position").eq("report_id", reportId).order("position"),
+    supabase.from("report_items").select("section, name, kind, status, count, target, position, client_facing").eq("report_id", reportId).order("position"),
     supabase.from("report_actions").select("action_type, title, url, done_on").eq("report_id", reportId).order("done_on", { nullsFirst: false }),
   ]);
 
-  // Only finished work, grouped by section.
+  // Only finished, client-facing work (the green rows in the SOP), grouped by section.
   const delivered = new Map<string, { name: string; count: number | null }[]>();
   for (const it of items ?? []) {
-    if (it.kind === "actions") continue;
+    if (it.kind === "actions" || !it.client_facing) continue;
     const done = itemDone(it) || (it.kind === "count" && (it.count ?? 0) > 0);
     if (!done) continue;
     const key = it.section ?? "Other";

@@ -6,7 +6,7 @@ import { PR_ITEM_PATTERN, PR_SNOOZE_DAYS } from "@/lib/press-release";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Thumbs up: the press release is in, so tick the Digital PR item on this month's report (starting the
+ * Thumbs up: the press release is in, so tick the PR task on this month's report (starting the
  * report if needed). Thumbs down: ask again in a couple of days.
  */
 export async function answerPressRelease(clientId: string, answer: "yes" | "no"): Promise<{ reportId?: string }> {

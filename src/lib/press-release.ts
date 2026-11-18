@@ -1,8 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 
-/** The monthly report item that records the client's press release. */
-export const PR_ITEM_PATTERN = "%digital pr%";
+/** The monthly report task that records the client's press release ("Create / distribute PR when included"). */
+export const PR_ITEM_PATTERN = "%distribute PR%";
 export const PR_REMIND_FROM_DAY = 16;
 export const PR_SNOOZE_DAYS = 2;
 
@@ -17,7 +17,7 @@ type ClientForPr = { id: string; name: string; status: string; lead_id: string |
 
 /**
  * The one client (if any) whose press release this lead should be reminded about today: after the 15th,
- * the client's report this month has a Digital PR item with nothing on it (or the report isn't started
+ * the client's report this month has a PR task with nothing on it (or the report isn't started
  * and their package includes it), and they haven't said "not yet" in the last couple of days.
  */
 export async function pickPressReleaseNudge(staffId: string, clients: ClientForPr[], today: string): Promise<ClientForPr | null> {

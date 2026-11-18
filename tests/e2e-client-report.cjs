@@ -94,15 +94,16 @@ async function publish(page) {
   await page.fill("input[name=url]", "frigiserve.com/blast-freezing");
   await page.click("form button:has-text('Add')");
   await page.waitForSelector("text=Blast freezing Fort Worth page");
-  const gbp = page.locator("li", { hasText: "GBP Posting" });
-  await gbp.locator("input[type=number]").fill("8");
+  const gbp = page.locator("li", { hasText: "Publish GBP content & media" });
+  await gbp.locator("button:text-is('Done')").click();
+  await page.locator("li", { hasText: "Review monthly performance" }).locator("button:text-is('Done')").click();
   await gbp.locator("button:has-text('+ Add links/notes')").click();
   await gbp.locator("textarea").nth(1).fill("INTERNAL: client was slow to send photos");
-  await page.locator("li", { hasText: "Title Tags + Meta Descriptions" }).locator("button:text-is('Done')").click();
+  await page.locator("li", { hasText: "Improve AI readability & on-page signals" }).locator("button:text-is('Done')").click();
   await page.fill("#wins", "Now recommended by ChatGPT and Gemini for blast freezing in DFW\nNew blast freezing page is live");
   await page.fill("#next_priorities", "Add a cold storage pricing guide.");
   await page.click("button:text-is('Save')");
-  await page.waitForSelector("text=Saved.");
+  await page.waitForSelector("span:text-is('Saved.')");
   await page.click("button:has-text('Refresh results')");
   await page.waitForTimeout(1500);
 
@@ -126,12 +127,13 @@ async function publish(page) {
   ok(body.includes("FrigiServe Cold Storage") && body.includes("November 2026 report"), "client sees their report without signing in");
   ok(body.includes("Now recommended by ChatGPT and Gemini") && body.includes("Great month, thanks for the photos!"), "wins and message shown");
   ok(body.includes("Blast freezing Fort Worth page") && body.includes("View it live"), "actions with links");
-  ok(body.includes("GBP Posting") && body.includes("(8)") && body.includes("Title Tags + Meta Descriptions"), "completed deliverables with counts");
+  ok(body.includes("Publish GBP content & media") && body.includes("Improve AI readability & on-page signals"), "completed client-facing tasks");
+  ok(!body.includes("Review monthly performance"), "internal tasks (white rows) never shown, even when done");
   ok(body.includes("Who offers blast freezing near Fort Worth?") && !body.includes("Cheapest freezer rental?"), "only prompts AI recommends them for");
   ok(body.includes("Clicks from Google") && (await c.isVisible("svg[aria-label^='Daily Google clicks']")), "Google results and chart");
   ok(body.includes("Add a cold storage pricing guide."), "next month's plan");
   ok(!/INTERNAL: client was slow/.test(html), "internal item notes never shown");
-  ok(!/Not done/.test(body) && !/Alt Image Text Optimisation/.test(body), "unfinished items never shown");
+  ok(!/Not done/.test(body) && !/Maintain schema & entity signals/.test(body), "unfinished items never shown");
   ok(!/admin@yroc\.test|Search Growth|\$3,750|3750/.test(html), "no staff, package name or price");
   ok(await c.isVisible("img[alt='Yroc Consulting']"), "Yroc branding for direct clients");
   await c.screenshot({ path: path.join(OUT, "22-client-report.png"), fullPage: true });
@@ -143,7 +145,7 @@ async function publish(page) {
   // Edits after publishing don't show until Update.
   await page.fill("#wins", "CHANGED AFTER PUBLISH");
   await page.click("button:text-is('Save')");
-  await page.waitForSelector("text=Saved.");
+  await page.waitForSelector("span:text-is('Saved.')");
   await c.reload();
   ok(!(await c.textContent("body")).includes("CHANGED AFTER PUBLISH"), "client sees the published snapshot, not live edits");
   await page.reload();
@@ -170,7 +172,7 @@ async function publish(page) {
   ok((await page.textContent("main")).includes("no Yroc name or logo"), "team is warned it's white label");
   await page.fill("#wins", "Ranked in the map pack for roof repair");
   await page.click("button:text-is('Save')");
-  await page.waitForSelector("text=Saved.");
+  await page.waitForSelector("span:text-is('Saved.')");
   const wl = await publish(page);
   await c.goto(wl);
   const wlHtml = await c.content();

@@ -20,6 +20,8 @@ function itemFields(fd: FormData) {
     level: str(fd, "level"),
     optional: fd.get("optional") === "on",
     notes: str(fd, "notes"),
+    done_when: str(fd, "done_when"),
+    client_facing: fd.get("client_facing") === "on",
   };
 }
 

@@ -15,6 +15,8 @@ export type EditorItem = {
   level: string | null;
   optional: boolean;
   guidance: string | null;
+  done_when: string | null;
+  client_facing: boolean;
   status: "todo" | "done" | "na";
   count: number | null;
   links: string[];
@@ -137,6 +139,8 @@ export function ReportEditor({
     return [...m.entries()];
   }, [items]);
   const actionsItem = items.find((i) => i.kind === "actions");
+  // Work through the SOP in order: the first task that isn't done or N/A is next up.
+  const nextId = readOnly ? null : items.find((i) => i.kind !== "actions" && i.status === "todo" && !itemDone(i))?.id ?? null;
 
   const save = () =>
     start(async () => {
@@ -198,17 +202,30 @@ export function ReportEditor({
             <ul className="divide-y divide-line">
               {list.map((it) => {
                 const ok = itemDone(it);
+                const next = it.id === nextId;
                 return (
-                  <li key={it.id} className={`grid gap-3 px-4 py-3 lg:grid-cols-[1fr_auto] ${it.status === "na" ? "opacity-50" : ""}`}>
+                  <li
+                    key={it.id}
+                    className={`grid gap-3 px-4 py-3 lg:grid-cols-[1fr_auto] ${it.status === "na" ? "opacity-50" : ""} ${next ? "bg-green/10 shadow-[inset_4px_0_0_#3F8F1C]" : ""}`}
+                    data-next={next ? "true" : undefined}
+                  >
                     <div className="min-w-0 space-y-1">
                       <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
                         <span className={`inline-block h-2.5 w-2.5 rounded-full ${ok ? "bg-green-d" : "bg-line"}`} />
+                        {next && <span className="rounded bg-green-d px-1.5 py-0.5 text-[11px] font-semibold text-white">Next up</span>}
                         {it.name}
+                        {it.client_facing && <span className="rounded bg-green/20 px-1.5 py-0.5 text-[11px] font-semibold text-green-d" title="Shows on the client report when done">Client sees this</span>}
+                        {it.target_label && it.kind === "check" && <span className="text-[11px] text-muted">{it.target_label}</span>}
                         {it.level && <span className="rounded bg-steel/10 px-1.5 py-0.5 text-[11px] font-semibold text-steel">{it.level}</span>}
                         {it.optional && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-800">Optional add-on</span>}
                         {it.frequency && it.frequency !== "Monthly" && <span className="text-[11px] text-muted">{it.frequency}</span>}
                       </p>
-                      {it.guidance && <p className="text-xs text-muted">{it.guidance}</p>}
+                      {it.guidance && <p className={`text-xs text-muted ${next ? "" : "line-clamp-1"}`}>{it.guidance}</p>}
+                      {it.done_when && (next || !ok) && (
+                        <p className={`text-xs ${next ? "text-ink" : "text-muted line-clamp-1"}`}>
+                          <span className="font-semibold">Done when:</span> {it.done_when}
+                        </p>
+                      )}
                       {!readOnly && it.links.filter(Boolean).length === 0 && !it.notes && !open.has(it.id) && (
                         <button type="button" className="text-xs text-muted hover:text-green-d" onClick={() => setOpen(new Set(open).add(it.id))}>
                           + Add links/notes

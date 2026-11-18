@@ -46,7 +46,8 @@ async function signIn(page, email) {
   ok(pk.includes("Search Foundation") && pk.includes("Search Growth") && pk.includes("Search Authority"), "three packages from the sheet");
   await page.click("a:has-text('Search Growth')");
   await page.waitForSelector("h2:has-text('Search Growth')");
-  ok((await page.textContent("main")).includes("GBP Posting") && (await page.textContent("main")).includes("target 8/month (2 per week)"), "weekly GBP posting becomes a monthly target");
+  ok((await page.textContent("main")).includes("Publish GBP content & media") && (await page.textContent("main")).includes("~2 posts/week, 4 Q&A/month, 5 media/week"), "SOP tasks with package volumes");
+  ok((await page.textContent("main")).includes("Create / distribute PR when included"), "Growth includes the PR task");
 
   // Put FrigiServe on Search Growth.
   await page.goto(BASE + "/clients?q=FrigiServe");
@@ -83,23 +84,31 @@ async function signIn(page, email) {
   }
   ok((await page.textContent("main")).includes("2 of 10 delivered"), "actions counted");
 
-  // Fill in items: GBP posting count, a check item, an N/A item, wins.
-  const gbp = page.locator("li", { hasText: "GBP Posting" });
-  await gbp.locator("input[type=number]").fill("8");
+  // Work through the SOP in order: the first open task is next up, and it moves on when ticked.
+  const nextUp = async () => (await page.locator("li[data-next=true]").textContent()) ?? "";
+  ok((await nextUp()).includes("Review monthly performance") && (await nextUp()).includes("Done when:"), "first task is next up, with its definition of done");
+  await page.locator("li[data-next=true]").locator("button:text-is('Done')").click();
+  ok((await nextUp()).includes("Choose monthly priorities"), "next up moves on to the next task");
+  ok((await page.locator("li", { hasText: "Analyze AI citations" }).textContent()).includes("Client sees this") === false, "internal tasks aren't marked client-facing");
+
+  // Fill in items: GBP links, a check item, an N/A item, wins.
+  const gbp = page.locator("li", { hasText: "Publish GBP content & media" });
+  await gbp.locator("button:text-is('Done')").click();
   await gbp.locator("button:has-text('+ Add links/notes')").click();
   await gbp.locator("textarea").first().fill("https://g.page/post1\nhttps://g.page/post2");
-  const titles = page.locator("li", { hasText: "Title Tags + Meta Descriptions" });
+  const titles = page.locator("li", { hasText: "Improve AI readability & on-page signals" });
   await titles.locator("button:text-is('Done')").click();
-  const speed = page.locator("li", { hasText: "Site Speed + Core Web Vitals Review" });
+  const speed = page.locator("li", { hasText: "Perform 90-day strategy reset" });
   await speed.locator("button:text-is('N/A')").click();
   await page.fill("#wins", "Now cited by ChatGPT for blast freezing in DFW.");
   await page.fill("#summary", "Launched the blast freezing page.");
   await page.fill("#organic_leads", "6");
   ok(await page.isVisible("text=Unsaved changes"), "unsaved changes flagged");
   await page.click("button:has-text('Save'):not(:has-text('profile'))");
-  await page.waitForSelector("text=Saved.");
+  await page.waitForSelector("span:text-is('Saved.')");
+  await page.waitForSelector("text=Unsaved changes", { state: "detached" });
   await page.reload();
-  ok((await gbp.locator("input[type=number]").inputValue()) === "8", "count saved");
+  ok((await gbp.locator("textarea").first().inputValue()).includes("post2"), "links saved");
   ok((await page.inputValue("#wins")).includes("cited by ChatGPT"), "wins saved");
   await page.screenshot({ path: path.join(OUT, "19-report.png"), fullPage: true });
 
@@ -113,7 +122,7 @@ async function signIn(page, email) {
   // Print view
   await page.goto(reportUrl + "/print");
   const pr = await page.textContent("main");
-  ok(pr.includes("Monthly work record") && pr.includes("Wins") && pr.includes("Blast freezing Fort Worth page") && pr.includes("8 of 8"), "print view shows wins, actions and counts");
+  ok(pr.includes("Monthly work record") && pr.includes("Wins") && pr.includes("Blast freezing Fort Worth page") && pr.includes("Publish GBP content & media"), "print view shows wins, actions and counts");
   await page.screenshot({ path: path.join(OUT, "20-report-print.png"), fullPage: true });
 
   // History on the client page and list status.
@@ -125,11 +134,11 @@ async function signIn(page, email) {
   // Editing a package later doesn't change the archived month.
   await page.goto(BASE + "/packages");
   await page.click("a:has-text('Search Growth')");
-  const li = page.locator("li", { hasText: "Title Tags + Meta Descriptions" });
+  const li = page.locator("li", { hasText: "Improve AI readability & on-page signals" });
   await li.locator("button:has-text('Remove')").click();
   await page.waitForTimeout(800);
   await page.goto(reportUrl);
-  ok((await page.textContent("main")).includes("Title Tags + Meta Descriptions"), "archived month keeps its own copy after a package change");
+  ok((await page.textContent("main")).includes("Improve AI readability & on-page signals"), "archived month keeps its own copy after a package change");
 
   // Member can't reopen.
   const m = await browser.newPage();

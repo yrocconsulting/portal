@@ -1,4 +1,4 @@
-// Press release reminders for leads: after the 15th, Digital PR item empty on this month's report.
+// Press release reminders for leads: after the 15th, PR task empty on this month's report.
 // Run after tests/e2e.cjs on a day of the month from the 16th on. Moves dates to simulate days passing.
 const { chromium } = require("playwright");
 const { execSync } = require("child_process");
@@ -55,14 +55,14 @@ const bubbles = (page) => page.locator("[role=dialog][aria-label^='Press release
   const linked = mk("Beta PR Client", pkg("Search Authority"));
   mk("Gamma Foundation Client", pkg("Search Foundation"));
 
-  // Beta already has a link on its Digital PR item: never asked.
+  // Beta already has a link on its PR task: never asked.
   const month = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }).slice(0, 7) + "-01";
   sql(`insert into monthly_reports (client_id, month, package_id) values ('${linked}', '${month}', '${pkg("Search Authority")}')`);
-  sql(`insert into report_items (report_id, section, name, links) select r.id, 'Off-page', 'Digital PR / Authority Outreach', array['https://news.example.com/pr'] from monthly_reports r where r.client_id='${linked}'`);
+  sql(`insert into report_items (report_id, section, name, links) select r.id, 'Off-page', 'Create / distribute PR when included', array['https://news.example.com/pr'] from monthly_reports r where r.client_id='${linked}'`);
 
   await m.goto(BASE + "/");
   ok((await bubbles(m).count()) === 1, "one press release reminder for the lead");
-  ok((await bubbles(m).first().getAttribute("aria-label")) === "Press release for Alpha PR Client", "for the client with nothing on Digital PR");
+  ok((await bubbles(m).first().getAttribute("aria-label")) === "Press release for Alpha PR Client", "for the client with nothing on the PR task");
   await m.screenshot({ path: (process.argv[2] || "/tmp") + "/30-press-release.png" });
   await a.goto(BASE + "/");
   ok((await bubbles(a).count()) === 0, "the account manager isn't asked about press releases");
@@ -80,13 +80,13 @@ const bubbles = (page) => page.locator("[role=dialog][aria-label^='Press release
   ok((await bubbles(m).count()) === 1, "asks again after a couple of days");
   ok((await m.locator("li", { has: m.locator(`a[href="/clients/${growth}"]`) }).last().textContent()).includes("press release not yet"), "card shows press release not yet");
 
-  // Submitted: starts the report and ticks the Digital PR item.
+  // Submitted: starts the report and ticks the PR task.
   await bubbles(m).locator("button:has-text('Submitted')").click();
   await m.waitForSelector("text=Ticked on this month's report");
-  ok(sql(`select ri.status from report_items ri join monthly_reports r on r.id=ri.report_id where r.client_id='${growth}' and ri.name ilike '%digital pr%'`) === "done", "Digital PR ticked on the report");
+  ok(sql(`select ri.status from report_items ri join monthly_reports r on r.id=ri.report_id where r.client_id='${growth}' and ri.name ilike '%distribute pr%'`) === "done", "PR task ticked on the report");
   sql(`update nudge_answers set created_at = created_at - interval '1 day' where staff_id='${member}'`);
   await m.goto(BASE + "/");
-  ok((await bubbles(m).count()) === 0, "nothing left to ask about (Foundation has no Digital PR item)");
+  ok((await bubbles(m).count()) === 0, "nothing left to ask about (Foundation has no PR task)");
   ok((await m.locator("li", { has: m.locator(`a[href="/clients/${growth}"]`) }).last().textContent()).includes("press release in"), "card shows press release in");
 
   await browser.close();

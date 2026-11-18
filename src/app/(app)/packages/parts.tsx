@@ -14,6 +14,8 @@ export type PkgItem = {
   level: string | null;
   optional: boolean;
   notes: string | null;
+  done_when: string | null;
+  client_facing: boolean;
 };
 
 function ItemFields({ it, sections }: { it?: PkgItem; sections: string[] }) {
@@ -45,7 +47,11 @@ function ItemFields({ it, sections }: { it?: PkgItem; sections: string[] }) {
       <label className="flex items-center gap-2 text-xs text-muted">
         <input type="checkbox" name="optional" defaultChecked={it?.optional} className="h-4 w-4" /> Optional add-on
       </label>
-      <input name="notes" defaultValue={it?.notes ?? ""} placeholder="Guidance shown on the monthly record" className="field sm:col-span-6" />
+      <input name="notes" defaultValue={it?.notes ?? ""} placeholder="What to do (shown on the monthly record)" className="field sm:col-span-6" />
+      <input name="done_when" defaultValue={it?.done_when ?? ""} placeholder="Definition of done" className="field sm:col-span-5" />
+      <label className="flex items-center gap-2 text-xs text-muted">
+        <input type="checkbox" name="client_facing" defaultChecked={it?.client_facing} className="h-4 w-4" /> Client sees this
+      </label>
     </div>
   );
 }
@@ -81,10 +87,11 @@ export function ItemRow({ it, sections }: { it: PkgItem; sections: string[] }) {
     <li className="flex items-start justify-between gap-3 px-4 py-2 text-sm">
       <span className="min-w-0">
         <span className="font-medium">{it.name}</span>
+        {it.client_facing && <span className="ml-2 rounded bg-green/20 px-1.5 py-0.5 text-[11px] font-semibold text-green-d">Client sees this</span>}
         {it.level && <span className="ml-2 rounded bg-steel/10 px-1.5 py-0.5 text-[11px] font-semibold text-steel">{it.level}</span>}
         {it.optional && <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-800">Optional</span>}
         <span className="block text-xs text-muted">
-          {[it.frequency, it.kind === "count" ? `target ${it.target}/month${it.target_label ? ` (${it.target_label})` : ""}` : it.kind === "actions" ? `actions log, target ${it.target}/month` : null]
+          {[it.frequency, it.kind === "count" ? `target ${it.target}/month${it.target_label ? ` (${it.target_label})` : ""}` : it.kind === "actions" ? `actions log, target ${it.target}/month` : it.target_label]
             .filter(Boolean)
             .join(" · ")}
         </span>

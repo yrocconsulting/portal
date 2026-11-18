@@ -3,9 +3,9 @@
 import { useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PLATFORMS } from "@/lib/visibility";
-import { addMedia, quoteFromAnswer, removeMedia, removeQuote, saveDesign, saveQuote, updateMedia } from "./design-actions";
+import { addMedia, quoteFromAnswer, readShot, removeMedia, removeQuote, saveDesign, saveQuote, updateMedia } from "./design-actions";
 
-export type DesignMedia = { id: string; kind: string; caption: string | null; url: string };
+export type DesignMedia = { id: string; kind: string; caption: string | null; url: string; read_at: string | null; read_note: string | null };
 export type DesignQuote = { id: string; platform: string; prompt: string | null; quote: string; note: string | null; cited_urls: string[] };
 
 const KIND_LABEL: Record<string, string> = {
@@ -34,6 +34,7 @@ function QuoteRow({ reportId, q, readOnly }: { reportId: string; q: DesignQuote;
     <li className="space-y-2 rounded-lg border border-line p-3" data-quote>
       <div className="grid gap-2 sm:grid-cols-[180px_1fr]">
         <select value={f.platform} disabled={readOnly} onChange={(e) => set({ platform: e.target.value })} className="field py-1.5 text-sm" aria-label="Platform">
+          {f.platform === "unknown" && <option value="unknown">Platform not shown</option>}
           {PLATFORMS.map(([k, l]) => (
             <option key={k} value={k}>
               {l}
@@ -122,24 +123,36 @@ export function DesignCard({
 
   const showing = gsc === "show" || (gsc === "auto" && gscAuto);
 
-  async function upload(list: FileList | null) {
+  async function upload(list: FileList | File[] | null) {
     if (!list?.length) return;
     setUploading(true);
     setUpMsg(null);
     const supabase = createClient();
+    let found = 0;
+    const notes: string[] = [];
     try {
       for (const f of Array.from(list)) {
         if (!f.type.startsWith("image/")) throw new Error(`${f.name} isn't an image.`);
         if (f.size > 8 * 1024 * 1024) throw new Error(`${f.name} is over 8 MB.`);
-        const ext = (f.name.split(".").pop() ?? "png").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const ext = (f.name.includes(".") ? f.name.split(".").pop()! : f.type.split("/")[1] ?? "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
         const path = `reports/${reportId}/${crypto.randomUUID()}.${ext}`;
         const { error } = await supabase.storage.from("report-media").upload(path, f, { contentType: f.type });
         if (error) throw new Error(error.message);
         const r = await addMedia(reportId, path, kind, caption);
         if (r.error) throw new Error(r.error);
+        if (kind === "ai" && r.id) {
+          setUpMsg({ ok: "Added. Claude is reading the screenshot..." });
+          const q = await readShot(reportId, r.id);
+          found += q.added ?? 0;
+          if (q.error) notes.push(q.error);
+        }
       }
       setCaption("");
-      setUpMsg({ ok: "Added." });
+      setUpMsg(
+        notes.length
+          ? { error: `Added, but: ${notes.join(" ")}` }
+          : { ok: kind === "ai" ? `Added. ${found ? `${found} quote${found === 1 ? "" : "s"} found: check them below.` : "No new quotes in it."}` : "Added." },
+      );
     } catch (x) {
       setUpMsg({ error: (x as Error).message });
     } finally {
@@ -149,7 +162,21 @@ export function DesignCard({
   }
 
   return (
-    <details className="card group/design" data-design>
+    <details
+      className="card group/design"
+      data-design
+      onPaste={(e) => {
+        if (readOnly || uploading) return;
+        const files = Array.from(e.clipboardData.items)
+          .filter((i) => i.type.startsWith("image/"))
+          .map((i) => i.getAsFile())
+          .filter((f): f is File => !!f);
+        if (files.length) {
+          e.preventDefault();
+          upload(files);
+        }
+      }}
+    >
       <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3 group-open/design:border-b group-open/design:border-line">
         <span>
           <span className="font-semibold">Client report design</span>
@@ -245,6 +272,26 @@ export function DesignCard({
                         </option>
                       ))}
                     </select>
+                    {m.kind === "ai" && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-muted" data-read-note>
+                          {m.read_at ? m.read_note : "Not read yet"}
+                        </span>
+                        {!readOnly && (
+                          <button
+                            className="shrink-0 text-green-d hover:underline"
+                            onClick={() =>
+                              start(async () => {
+                                const q = await readShot(reportId, m.id, !!m.read_at);
+                                setUpMsg(q.error ? { error: q.error } : { ok: q.note ?? "Read." });
+                              })
+                            }
+                          >
+                            {m.read_at ? "Read again" : "Read quotes"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-muted">{m.caption ?? "No caption"}</span>
                       {!readOnly && (
@@ -277,7 +324,10 @@ export function DesignCard({
               </div>
             </div>
           )}
-          <p className="text-xs text-muted">Search Console screenshots only show when the Search Console section does.</p>
+          <p className="text-xs text-muted">
+            Tip: take a snip (Windows: Win+Shift+S, Mac: Cmd+Ctrl+Shift+4) and press Ctrl+V here. Screenshots added under &ldquo;AI results&rdquo; are read by Claude, and
+            the AI&apos;s words about the client become quotes below. Search Console screenshots only show when the Search Console section does.
+          </p>
         </details>
 
         <details className="group/quotes space-y-3 border-t border-line pt-5" open={quotes.length < 3}>
@@ -297,10 +347,12 @@ export function DesignCard({
               ))}
             </ul>
           )}
+          {quotes.length === 0 && <p className="text-xs text-muted">Add an AI results screenshot above and Claude fills this in.</p>}
           {!readOnly && (
-            <div className="space-y-2 rounded-lg bg-bg p-3">
+            <details className="space-y-2 rounded-lg bg-bg p-3">
+              <summary className="cursor-pointer text-xs font-semibold text-muted">Other ways to add quotes</summary>
               <p className="text-xs text-muted">
-                Fastest: use the{" "}
+                Use the{" "}
                 <a href="/capture" target="_blank" className="font-semibold text-green-d hover:underline">
                   ProRankTracker button
                 </a>{" "}
@@ -344,7 +396,7 @@ export function DesignCard({
                   {pulling ? "Reading..." : "Pull the quote"}
                 </button>
               </div>
-            </div>
+            </details>
           )}
         </details>
       </div>

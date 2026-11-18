@@ -129,21 +129,33 @@ async function publish(page) {
   await page.waitForSelector("[data-design] >> text=Saved.");
   await page.fill("input[placeholder='Caption (optional)']", "ChatGPT's answer in ProRankTracker");
   await page.setInputFiles("[data-design] input[type=file]", png);
-  await page.waitForSelector("text=Added.");
+  await page.waitForSelector("text=/Added\\. 2 quotes found/");
   await page.waitForSelector("[data-media]");
   ok((await page.locator("[data-media]").count()) === 1, "screenshot added to the record");
-  await page.fill("textarea[aria-label='AI answer']", "Here are some options. FrigiServe Cold Storage is a top choice for blast freezing near Fort Worth, with food-grade facilities (https://frigiserve.com/blast-freezing). Another option is Acme Cold.");
-  await page.fill("input[aria-label='Answer prompt']", "Who offers blast freezing near Fort Worth?");
-  await page.click("button:has-text('Pull the quote')");
-  await page.waitForSelector("text=/Quote added/");
   await page.waitForSelector("[data-quote]");
-  const qv = await page.locator("[data-quote] textarea[aria-label='Quote']").inputValue();
-  ok(qv.startsWith("FrigiServe Cold Storage is a top choice for blast freezing"), "quote is the AI's own sentence naming the client");
-  ok((await page.locator("[data-quote] textarea[aria-label='Cited pages']").inputValue()).includes("https://frigiserve.com/blast-freezing"), "client's cited page picked up");
-  await page.fill("textarea[aria-label='AI answer']", "Try Acme Cold or Polar Storage, both are great.");
-  await page.click("button:has-text('Pull the quote')");
-  await page.waitForSelector("text=This answer doesn't mention FrigiServe Cold Storage.");
-  ok(true, "answers that don't name the client are refused");
+  ok((await page.locator("[data-quote]").count()) === 2, "Claude read the screenshot: 2 quotes naming the client (other businesses left out)");
+  const qv = await page.locator("[data-quote] textarea[aria-label='Quote']").first().inputValue();
+  ok(qv === "FrigiServe Cold Storage is the top choice for blast freezing near Fort Worth.", "quote cleaned of ProRankTracker's lead-in");
+  ok((await page.locator("[data-quote] select[aria-label='Platform']").first().inputValue()) === "ai_mode", "platform read from the screenshot");
+  ok((await page.locator("[data-quote] textarea[aria-label='Cited pages']").first().inputValue()) === "https://frigiserve.com/blast-freezing", "only the client's own cited page kept");
+  ok((await page.textContent("[data-read-note]")).includes("2 quotes found"), "screenshot marked as read");
+  await page.click("button:has-text('Read again')");
+  await page.waitForSelector("text=Quotes were already on the report.");
+  ok((await page.locator("[data-quote]").count()) === 2, "reading again doesn't duplicate");
+  const st = await fetch("http://127.0.0.1:4030/__state").then((r) => r.json());
+  ok(st.requests.some((r) => r.body.messages[0].content.some?.((p) => p.type === "image")), "the screenshot itself was sent to Claude");
+
+  // A pasted screenshot (Ctrl+V) is added and read too.
+  await page.evaluate(async (b64) => {
+    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const dt = new DataTransfer();
+    dt.items.add(new File([bin], "image.png", { type: "image/png" }));
+    document.querySelector("[data-design]").dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, require("fs").readFileSync(png).toString("base64"));
+  await page.waitForFunction(() => document.querySelectorAll("[data-media]").length === 2);
+  ok(true, "Ctrl+V adds a screenshot");
+  await page.locator("[data-media] >> nth=1").locator("button:has-text('Remove')").click();
+  await page.waitForFunction(() => document.querySelectorAll("[data-media]").length === 1);
 
   await page.fill("#client_note", "Great month, thanks for the photos!");
   const link1 = await publish(page);
@@ -167,7 +179,7 @@ async function publish(page) {
   ok((await c.locator(".cr").getAttribute("style")).includes("#c91f26"), "client's brand color used");
   ok(await c.isVisible("img[alt='FrigiServe Cold Storage logo']"), "client's logo shown");
   ok(body.includes("Here's what AI is telling your customers") && (await c.locator(".cr-mk").first().textContent()) === "FrigiServe Cold Storage", "AI quote with the client's name highlighted");
-  ok(body.includes("/blast-freezing") && body.includes("Built this month") && body.includes("cited by ChatGPT"), "cited page, marked as built this month");
+  ok(body.includes("/blast-freezing") && body.includes("Built this month") && body.includes("cited by AI Mode"), "cited page, marked as built this month");
   ok(await c.isVisible("img[alt=\"ChatGPT's answer in ProRankTracker\"]"), "ProRankTracker screenshot shown");
   ok(body.includes("5") && body.includes("total appearances in AI answers"), "per-platform counts on the prompt cards");
   ok(body.includes("Now recommended by ChatGPT and Gemini") && body.includes("Great month, thanks for the photos!"), "wins and message shown");
@@ -196,7 +208,7 @@ async function publish(page) {
   await page.reload();
   ok(await page.isVisible("text=has changed since it was published"), "team is told the record changed since publishing");
   if (!(await page.isVisible("#gsc_display"))) await page.click("[data-design] > summary");
-  ok((await page.textContent("[data-design] > summary")).includes("1 screenshot · 1 AI quote"), "minimized summary shows what's there");
+  ok((await page.textContent("[data-design] > summary")).includes("1 screenshot · 2 AI quotes"), "minimized summary shows what's there");
   await page.selectOption("#gsc_display", "show");
   await page.click("button:has-text('Save headline and settings')");
   await page.waitForSelector("[data-design] >> text=Saved.");

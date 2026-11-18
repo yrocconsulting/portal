@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { cleanMention } from "@/lib/capture";
 import { claudeConfigured, MODEL } from "@/lib/drafts/claude";
 
 /** Pulls a client report quote out of an AI answer pasted from ProRankTracker. */
@@ -85,4 +86,67 @@ Return:
   const quote = sentencesNaming(answer, names);
   if (!quote) throw new Error(`Couldn't find a sentence naming ${clientName}.`);
   return { quote, note: null, cited_urls, by: "text" };
+}
+
+const ShotSchema = z.object({
+  is_ai_result: z.boolean(),
+  platform: z.enum(["aio", "ai_mode", "chatgpt", "gemini", "perplexity", "copilot", "unknown"]),
+  prompt: z.string(),
+  quotes: z.array(z.string()),
+  cited_urls: z.array(z.string()),
+});
+
+export type ShotRead = { platform: string | null; prompt: string | null; quotes: string[]; cited_urls: string[]; note: string };
+
+/** Reads a ProRankTracker screenshot: the AI's words about the client, the platform, the prompt, cited pages. */
+export async function readScreenshot(
+  image: { data: string; media_type: "image/png" | "image/jpeg" | "image/webp" | "image/gif" },
+  clientName: string,
+  domain: string | null,
+): Promise<ShotRead> {
+  if (!claudeConfigured()) throw new Error("Claude isn't connected (ANTHROPIC_API_KEY).");
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY?.trim(), baseURL: process.env.ANTHROPIC_BASE_URL || undefined });
+  const res = await client.beta.messages.parse({
+    model: MODEL,
+    max_tokens: 8000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "low", format: betaZodOutputFormat(ShotSchema) },
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: image.media_type, data: image.data } },
+          {
+            type: "text",
+            text: `This is a screenshot from ProRankTracker, a tool that tracks what AI assistants say about businesses. Our client is "${clientName}"${domain ? ` (website ${domain})` : ""}.
+
+Read it and return:
+- is_ai_result: true if it shows AI answers or mentions (for example an "Appearances" pop-up with a Mentions table, or an AI answer). False for anything else (charts only, settings, unrelated pages).
+- platform: which AI the answer is from, from the title or labels ("AIO" or "AI Overview" = aio, "AI Mode" or "AIM" = ai_mode, chatgpt, gemini, perplexity, copilot). "unknown" if it isn't shown.
+- prompt: the search prompt the answer is for, exactly as shown (often in the title after "Appearances:"). Empty if not shown.
+- quotes: each passage that names ${clientName} and says something about them, transcribed EXACTLY as written in the screenshot (same words and order). Leave out tool labels such as "AI Overview AI Mode reply for <prompt>" at the start of a passage, and leave out passages that only list an address, phone number or hours. Up to 6. Never add, change or summarize words. If a passage is cut off at the edge of the screenshot, end it where the visible text ends.
+- cited_urls: web addresses shown in the screenshot that are on the client's website, written in full with https://. Empty if none.`,
+          },
+        ],
+      },
+    ],
+  });
+  if (res.stop_reason === "refusal") throw new Error("Claude couldn't read this screenshot.");
+  const r = res.parsed_output;
+  if (!r) throw new Error("Claude couldn't read this screenshot.");
+  if (!r.is_ai_result) return { platform: null, prompt: null, quotes: [], cited_urls: [], note: "Not an AI result, so no quotes were taken." };
+  const short = clientName.replace(/[\s,]+(llc|inc\.?|co\.?|corp\.?|ltd\.?|pllc)$/i, "").trim();
+  const names = [...new Set([clientName, short, short.split(" ")[0]])].filter((n) => n.length > 2);
+  const quotes = r.quotes
+    .map((q) => cleanMention(stripUrls(q), r.prompt))
+    .filter((q) => q.length > 15 && names.some((n) => norm(q).includes(norm(n))));
+  const cited = clientUrls(r.cited_urls.join(" "), domain);
+  return {
+    platform: r.platform === "unknown" ? null : r.platform,
+    prompt: r.prompt.trim() || null,
+    quotes,
+    cited_urls: cited,
+    note: quotes.length ? `${quotes.length} quote${quotes.length === 1 ? "" : "s"} found` : `No passages naming ${clientName}.`,
+  };
 }

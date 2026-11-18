@@ -31,7 +31,7 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
     supabase.from("report_actions").select("*").eq("report_id", id).order("created_at"),
     supabase.from("action_types").select("name, category").order("position"),
     supabase.from("staff").select("id, full_name, email"),
-    supabase.from("report_media").select("id, kind, caption, path").eq("report_id", id).order("position"),
+    supabase.from("report_media").select("id, kind, caption, path, read_at, read_note").eq("report_id", id).order("position"),
     supabase.from("report_quotes").select("id, platform, prompt, quote, note, cited_urls").eq("report_id", id).order("position"),
   ]);
   const who = (sid: string | null) => {
@@ -116,7 +116,7 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
         gscDisplay={r.gsc_display ?? "auto"}
         gscAuto={gscPositive((r.results ?? {}) as Results)}
         hasGsc={!!((r.results ?? {}) as Results).gsc}
-        media={(media ?? []).map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, url: mediaUrl(m.path) }))}
+        media={(media ?? []).map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, url: mediaUrl(m.path), read_at: m.read_at, read_note: m.read_note }))}
         quotes={(quotes ?? []) as DesignQuote[]}
         clientName={client.name}
       />

@@ -46,6 +46,26 @@ http
       if (key !== "test-key") return send(401, { type: "error", error: { type: "authentication_error", message: "invalid x-api-key" } });
       const user = typeof body.messages[0].content === "string" ? body.messages[0].content : JSON.stringify(body.messages[0].content);
 
+      if (body.output_config?.format?.schema?.properties?.is_ai_result) {
+        // Screenshot reading: needs an image block.
+        const parts = body.messages[0].content;
+        const hasImage = Array.isArray(parts) && parts.some((p) => p.type === "image" && p.source?.data);
+        const name = (Array.isArray(parts) ? parts.find((p) => p.type === "text")?.text : "")?.match(/Our client is "([^"]+)"/)?.[1] ?? "";
+        const out = hasImage
+          ? {
+              is_ai_result: true,
+              platform: "ai_mode",
+              prompt: "Who offers blast freezing near Fort Worth",
+              quotes: [
+                `AI Overview AI Mode reply for Who offers blast freezing near Fort Worth ${name} is the top choice for blast freezing near Fort Worth.`,
+                "Acme Cold is also an option.",
+                `${name} has served DFW food companies since 1998.`,
+              ],
+              cited_urls: ["https://frigiserve.com/blast-freezing", "https://other.example/list"],
+            }
+          : { is_ai_result: false, platform: "unknown", prompt: "", quotes: [], cited_urls: [] };
+        return send(200, msg([{ type: "text", text: JSON.stringify(out) }], "end_turn"));
+      }
       if (body.output_config?.format?.schema?.properties?.quote) {
         // Quote extraction: the sentence naming the client, copied exactly.
         const answer = user.split("<answer>")[1]?.split("</answer>")[0] ?? "";

@@ -17,7 +17,7 @@ const shortMonth = (ym: string, offset = 0) => {
   const [y, m] = ym.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1 + offset, 1)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
 };
-const platformLabel = (k: string) => PLATFORMS.find(([key]) => key === k)?.[1] ?? k;
+const platformLabel = (k: string) => PLATFORMS.find(([key]) => key === k)?.[1] ?? (k === "unknown" ? "AI answer" : k);
 const host = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
 const path = (u: string) => {
   try {

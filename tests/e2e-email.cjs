@@ -83,12 +83,12 @@ async function latestLink(email) {
 
   // Run intake from the Inbox page.
   await page.goto(BASE + "/inbox");
-  await page.click("text=Check helpdesk now");
+  await page.click("text=Check mailbox now");
   await page.waitForSelector("text=/Checked 7 new emails/", { timeout: 30000 });
   log("result:", (await page.textContent("p.text-green-d, p.text-red-700")).trim());
 
   // Second run finds nothing (marked read, no duplicates).
-  await page.click("text=Check helpdesk now");
+  await page.click("text=Check mailbox now");
   await page.waitForSelector("text=Checked 0 new emails");
   ok(true, "second run creates no duplicates");
 

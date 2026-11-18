@@ -32,7 +32,7 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
 - AI visibility: the website repo's Monday `ai-stats` job posts full ProRankTracker results to
   `/api/prt/ingest` (secret `PRT_INGEST_SECRET` here, `PORTAL_INGEST_SECRET` there). Results are stored
   by domain and joined to clients via `tracking_domain ?? domain` at read time.
-- Email intake: staff forward client mail to the helpdesk mailbox (clients keep emailing their account
+- Email intake: staff forward client mail to the tasks@ shared mailbox (env HELPDESK_MAILBOX) (clients keep emailing their account
   manager; nobody's personal mailbox is read). `src/lib/email/parse.ts` (pure, unit tested) reads the
   forward; `process.ts` files it. Only active staff senders create tickets; others go to Inbox review.
 - Client logins: `client_credentials.password_enc` is encrypted in the app (`src/lib/crypto.ts`,

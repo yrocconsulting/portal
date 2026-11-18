@@ -10,13 +10,13 @@ import { createClient } from "@/lib/supabase/server";
 
 type State = { message?: string; error?: string };
 
-/** Reads the helpdesk mailbox now (any staff member). */
+/** Reads the tasks mailbox now (any staff member). */
 export async function checkNow(): Promise<State> {
   await requireStaff();
   try {
     const r = await processHelpdesk();
     revalidatePath("/", "layout");
-    if (!r.configured) return { error: "The helpdesk mailbox is not connected yet." };
+    if (!r.configured) return { error: "The tasks mailbox is not connected yet." };
     const parts = [`Checked ${r.checked} new email${r.checked === 1 ? "" : "s"}`];
     if (r.tickets) parts.push(`${r.tickets} ticket${r.tickets === 1 ? "" : "s"} created`);
     if (r.comments) parts.push(`${r.comments} added to tickets`);

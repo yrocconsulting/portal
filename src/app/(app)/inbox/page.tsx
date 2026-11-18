@@ -50,7 +50,7 @@ export default async function InboxPage() {
       <div>
         <h1 className="text-2xl font-bold">Inbox</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Forward a client email to <b className="text-ink">{cfg?.helpdesk ?? "the helpdesk address"}</b> and it becomes a ticket, linked to the client by the
+          Forward a client email to <b className="text-ink">{cfg?.helpdesk ?? "the tasks address"}</b> and it becomes a ticket, linked to the client by the
           sender. To add to an existing ticket, keep its number (like <span className="font-mono">#1042</span>) in the subject. Only team members can create
           tickets this way; anything else waits here for review.
         </p>

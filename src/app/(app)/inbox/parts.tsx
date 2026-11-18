@@ -13,7 +13,7 @@ export function RunButton({ kind }: { kind: "check" | "connect" }) {
         disabled={pending}
         onClick={() => start(async () => setResult(await (kind === "check" ? checkNow() : connectMailbox())))}
       >
-        {pending ? "Working..." : kind === "check" ? "Check helpdesk now" : "Reconnect mailbox"}
+        {pending ? "Working..." : kind === "check" ? "Check mailbox now" : "Reconnect mailbox"}
       </button>
       {result?.message && <p className="text-sm text-green-d">{result.message}</p>}
       {result?.error && <p className="text-sm text-red-700">{result.error}</p>}

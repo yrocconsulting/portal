@@ -87,7 +87,7 @@ const post = (body, secret = "test-prt-secret") =>
 
   // Client page
   await page.goto(BASE + "/clients?q=FrigiServe");
-  ok((await page.textContent("tbody")).includes("90%"), "clients list shows latest visibility");
+  ok(!(await page.textContent("thead")).includes("AI"), "clients list has no AI column (it's on the client page)");
   await page.click("tbody a >> nth=0");
   await page.waitForURL(/\/clients\/[0-9a-f-]{36}/);
   const cp = await page.textContent("#ai-visibility");

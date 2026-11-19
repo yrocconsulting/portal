@@ -5,12 +5,11 @@ import { Avatar } from "@/components/avatar";
 import { requireStaff, staffName } from "@/lib/auth";
 import { avatarUrls } from "@/lib/avatars";
 import { createClient } from "@/lib/supabase/server";
-import { trackedDomain } from "@/lib/visibility";
 import { CLIENT_STATUSES, CLIENT_STATUS_LABEL, OPEN_STATUSES, SERVICES, type Client } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Clients" };
 
-const SORTS = ["name", "lead", "package", "domain", "industry", "status", "services", "visibility", "tickets"] as const;
+const SORTS = ["name", "lead", "package", "domain", "industry", "status", "services", "tickets"] as const;
 type SortKey = (typeof SORTS)[number];
 const STATUS_ORDER = { onboarding: 0, active: 1, paused: 2, former: 3 } as const;
 
@@ -47,20 +46,15 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
     const safe = q.replace(/[%,()]/g, " ");
     query = query.or(`name.ilike.%${safe}%,domain.ilike.%${safe}%,city.ilike.%${safe}%,industry.ilike.%${safe}%`);
   }
-  const [{ data: clients }, { data: open }, { data: latest }, { data: staff }, { data: packages }] = await Promise.all([
+  const [{ data: clients }, { data: open }, { data: staff }, { data: packages }] = await Promise.all([
     query,
     supabase.from("tickets").select("client_id").in("status", OPEN_STATUSES).not("client_id", "is", null),
-    supabase.from("prt_reports").select("report_date").order("report_date", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("staff").select("id, full_name, email, avatar_path").eq("active", true).order("full_name"),
     supabase.from("packages").select("id, name, position"),
   ]);
   const pkg = (id: string | null) => (packages ?? []).find((p) => p.id === id);
   const photos = await avatarUrls((staff ?? []).map((s) => s.avatar_path));
   const person = (id: string | null) => (staff ?? []).find((s) => s.id === id);
-  const { data: vis } = latest
-    ? await supabase.from("prt_site_results").select("domain, visibility").eq("report_date", latest.report_date)
-    : { data: [] as { domain: string; visibility: number }[] };
-  const visBy = new Map((vis ?? []).map((v) => [v.domain, v.visibility]));
 
   const openBy = new Map<string, number>();
   (open ?? []).forEach((t) => openBy.set(t.client_id as string, (openBy.get(t.client_id as string) ?? 0) + 1));
@@ -80,8 +74,6 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
         return STATUS_ORDER[c.status];
       case "services":
         return c.services.length ? [...c.services].sort().join(", ").toLowerCase() : null;
-      case "visibility":
-        return visBy.get(trackedDomain(c) ?? "") ?? null;
       case "tickets":
         return openBy.get(c.id) ?? 0;
       default:
@@ -106,7 +98,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
     if (key !== "name" || sort !== "name" || !desc) {
       u.set("sort", key);
       // Numbers start high-to-low (best first); text starts A to Z.
-      const firstDesc = key === "visibility" || key === "tickets";
+      const firstDesc = key === "tickets";
       if (sort === key ? !desc : firstDesc) u.set("dir", "desc");
     }
     if (key === "name" && sort === "name" && desc) u.delete("sort");
@@ -182,9 +174,6 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                 </Th>
                 <Th {...th("status")}>Status</Th>
                 <Th {...th("services")}>Services</Th>
-                <Th {...th("visibility")} right>
-                  <span title="AI visibility, latest week">AI</span>
-                </Th>
                 <Th {...th("tickets")} right>
                   <span title="Open tickets">Tickets</span>
                 </Th>
@@ -218,12 +207,6 @@ export default async function ClientsPage({ searchParams }: PageProps<"/clients"
                   <td className="px-4 py-3">{CLIENT_STATUS_LABEL[c.status]}</td>
                   <td className="max-w-48 truncate px-4 py-3 text-muted" title={c.services.join(", ")}>
                     {c.services.join(", ")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {(() => {
-                      const v = visBy.get(trackedDomain(c) ?? "");
-                      return v === undefined ? <span className="text-muted/50">none</span> : <Link href={`/clients/${c.id}#ai-visibility`} className="hover:text-green-d">{v}%</Link>;
-                    })()}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">{openBy.get(c.id) ?? 0}</td>
                 </tr>

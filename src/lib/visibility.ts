@@ -7,6 +7,9 @@ export const PLATFORMS = [
   ["copilot", "Copilot"],
 ] as const;
 
+/** Platforms we actively track for clients (Perplexity and Copilot are in the weekly report but not tracked). */
+export const TRACKED_PLATFORMS = ["chatgpt", "gemini", "aio", "ai_mode"] as const;
+
 export type SiteResult = {
   report_date: string;
   domain: string;

@@ -1,5 +1,5 @@
 import type { ClientSnapshot } from "@/lib/client-report";
-import { PLATFORMS } from "@/lib/visibility";
+import { PLATFORMS, TRACKED_PLATFORMS } from "@/lib/visibility";
 import { reportBody, reportDisplay } from "./report-fonts";
 
 /**
@@ -302,7 +302,7 @@ export function ClientReport({ snap, preview = false }: { snap: ClientSnapshot; 
   const top = (ai?.top ?? []).filter((t) => t.visibility > 0);
   const platformTotals = ai?.platforms ?? {};
   const engines = PLATFORMS.filter(([k]) => (platformTotals[k] ?? 0) > 0).map(([k]) => k);
-  const notYet = PLATFORMS.filter(([k]) => !engines.includes(k)).map(([k]) => k);
+  const notYet = TRACKED_PLATFORMS.filter((k) => !engines.includes(k));
   const title = snap.title ?? (ai && ai.visibility >= 50 ? `When AI gets asked, *it names ${snap.client}.*` : `${snap.client}: *${shortMonth(snap.month)} results.*`);
 
   const kpis: { n: string; l: string }[] = [];

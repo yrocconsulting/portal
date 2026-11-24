@@ -53,11 +53,14 @@ const bubbles = (page) => page.locator("[role=dialog][aria-label^='Press release
     sql(`insert into clients (name, status, lead_id, account_manager_id, package_id, checkin_days) values ('${name}', 'active', '${member}', '${admin}', '${p}', null) returning id`);
   const growth = mk("Alpha PR Client", pkg("Search Growth"));
   const linked = mk("Beta PR Client", pkg("Search Authority"));
-  mk("Gamma Foundation Client", pkg("Search Foundation"));
+  const gamma = mk("Gamma Foundation Client", pkg("Search Foundation"));
+  ok(sql(`select count(*) from package_items where package_id='${pkg("Search Foundation")}' and name ilike '%distribute pr%'`) === "1", "Foundation package includes the PR task");
 
   // Beta already has a link on its PR task: never asked.
   const month = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }).slice(0, 7) + "-01";
   sql(`insert into monthly_reports (client_id, month, package_id) values ('${linked}', '${month}', '${pkg("Search Authority")}')`);
+  sql(`insert into monthly_reports (client_id, month, package_id) values ('${gamma}', '${month}', '${pkg("Search Foundation")}')`);
+  sql(`insert into report_items (report_id, section, name, status) select r.id, 'AI Visibility & Authority', 'Create / distribute PR when included', 'na' from monthly_reports r where r.client_id='${gamma}'`);
   sql(`insert into report_items (report_id, section, name, links) select r.id, 'Off-page', 'Create / distribute PR when included', array['https://news.example.com/pr'] from monthly_reports r where r.client_id='${linked}'`);
 
   await m.goto(BASE + "/");
@@ -86,7 +89,7 @@ const bubbles = (page) => page.locator("[role=dialog][aria-label^='Press release
   ok(sql(`select ri.status from report_items ri join monthly_reports r on r.id=ri.report_id where r.client_id='${growth}' and ri.name ilike '%distribute pr%'`) === "done", "PR task ticked on the report");
   sql(`update nudge_answers set created_at = created_at - interval '1 day' where staff_id='${member}'`);
   await m.goto(BASE + "/");
-  ok((await bubbles(m).count()) === 0, "nothing left to ask about (Foundation has no PR task)");
+  ok((await bubbles(m).count()) === 0, "nothing left to ask about (Gamma's PR is N/A this month)");
   ok((await m.locator("li", { has: m.locator(`a[href="/clients/${growth}"]`) }).last().textContent()).includes("press release in"), "card shows press release in");
 
   await browser.close();

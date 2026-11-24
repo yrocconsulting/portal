@@ -116,6 +116,11 @@ async function publish(page) {
   await page.locator("li", { hasText: "Improve AI readability & on-page signals" }).locator("button:text-is('Done')").click();
   await page.fill("#wins", "Now recommended by ChatGPT and Gemini for blast freezing in DFW\nNew blast freezing page is live");
   await page.fill("#next_priorities", "Add a cold storage pricing guide.");
+  // Press release: a link (pasted without https://) on the PR task is enough, even if it isn't ticked done.
+  const prTask = page.locator("li", { hasText: "Create / distribute PR when included" });
+  await prTask.locator("button:has-text('+ Add links/notes')").click();
+  await prTask.locator("textarea").first().fill("issuewire.com/frigiserve-opens-blast-freezing");
+  await prTask.locator("textarea").nth(1).fill("FrigiServe Opens Blast Freezing in Fort Worth");
   await page.click("button:text-is('Save')");
   await page.waitForSelector("span:text-is('Saved.')");
   await page.click("button:has-text('Refresh results')");
@@ -189,6 +194,7 @@ async function publish(page) {
   ok(body.includes("Who offers blast freezing near Fort Worth?") && !body.includes("Cheapest freezer rental?"), "only prompts AI recommends them for");
   ok(!(await c.isVisible("svg[aria-label^='Daily Google clicks']")) && !body.includes("More people are finding you on Google"), "Search Console hidden: clicks are down this month (auto)");
   ok(body.includes("Add a cold storage pricing guide."), "next month's plan");
+  ok(body.includes("Published and syndicated") && body.includes("FrigiServe Opens Blast Freezing in Fort Worth") && (await c.getAttribute("a.prlink", "href")) === "https://issuewire.com/frigiserve-opens-blast-freezing", "press release section from the PR task's link");
   ok(!/INTERNAL: client was slow/.test(html), "internal item notes never shown");
   ok(!/Not done/.test(body) && !/Maintain schema & entity signals/.test(body), "unfinished items never shown");
   ok(!/admin@yroc\.test|Search Growth|\$3,750|3750/.test(html), "no staff, package name or price");

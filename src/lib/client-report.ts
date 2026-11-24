@@ -107,14 +107,16 @@ export async function buildSnapshot(reportId: string): Promise<ClientSnapshot> {
     delivered.set(key, [...(delivered.get(key) ?? []), { name: it.name, count: it.kind === "count" ? it.count ?? null : null }]);
   }
 
-  // Press release: the PR task's links (and its note as the title) once it's done.
+  // Press release: shown as soon as the PR task has a link (or is ticked done with a note as the title).
+  // Links pasted without https:// still count. Marked N/A means no release this month.
   const prItem = (items ?? []).find((i) => new RegExp(PR_ITEM_PATTERN.replace(/%/g, ".*"), "i").test(i.name));
   const pr: NonNullable<ClientSnapshot["pr"]> = [];
-  if (prItem && prItem.status === "done") {
-    const links = ((prItem.links as string[] | null) ?? []).map((l) => safeUrl(l.trim())).filter((l): l is string => !!l);
+  const asUrl = (l: string) => safeUrl(/^https?:\/\//i.test(l) ? l : /^[\w-]+(\.[\w-]+)+(\/|$)/.test(l) ? `https://${l}` : null);
+  if (prItem && prItem.status !== "na") {
+    const links = ((prItem.links as string[] | null) ?? []).map((l) => asUrl(l.trim())).filter((l): l is string => !!l);
     const title = (prItem.notes as string | null)?.split("\n")[0]?.trim() || null;
     if (links.length) links.forEach((url, i) => pr.push({ title: i === 0 && title ? title : "Read the published release", url }));
-    else if (title) pr.push({ title, url: null });
+    else if (title && prItem.status === "done") pr.push({ title, url: null });
   }
 
   // Google Search: the month and the one before, day by day, for the chart. Hidden unless positive (or forced).

@@ -8,6 +8,7 @@ import { buildContext, KINDS, type DraftKind } from "@/lib/drafts/context";
 import { AngleSchema, claudeConfigured, MODEL, suggestAngles, writeDraft, type Angle, type Usage } from "@/lib/drafts/claude";
 import { str } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { notifySoon } from "@/lib/notify";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -122,6 +123,7 @@ export async function postToTicket(id: string) {
   const { error } = await db.from("ticket_comments").insert({ ticket_id: ticketId, author_id: me.id, author_kind: "claude", body, internal: true });
   if (error) return { error: error.message };
   await db.from("ai_drafts").update({ status: "posted", ticket_id: ticketId }).eq("id", id);
+  notifySoon();
   const { data: t } = await db.from("tickets").select("number").eq("id", ticketId).single();
   revalidatePath("/", "layout");
   redirect(`/tickets/${t?.number}`);

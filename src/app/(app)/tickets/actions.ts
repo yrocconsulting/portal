@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import { str } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { PRIORITIES, STATUSES, TYPES } from "@/lib/types";
+import { notifySoon } from "@/lib/notify";
 
 function pick<T extends readonly string[]>(list: T, v: string | null, fallback: T[number]): T[number] {
   return v && (list as readonly string[]).includes(v) ? (v as T[number]) : fallback;
@@ -34,6 +35,7 @@ export async function createTicket(_prev: { error?: string }, fd: FormData): Pro
     .select("number")
     .single();
   if (error) return { error: error.message };
+  notifySoon();
   revalidatePath("/", "layout");
   redirect(`/tickets/${data.number}`);
 }
@@ -53,6 +55,7 @@ export async function updateTicketField(ticketId: string, field: string, value: 
   const supabase = await createClient();
   const { error } = await supabase.from("tickets").update({ [field]: allowed[field](value) }).eq("id", ticketId);
   if (error) throw new Error(error.message);
+  if (field === "assignee_id") notifySoon();
   revalidatePath("/", "layout");
 }
 
@@ -85,6 +88,7 @@ export async function addComment(_prev: { error?: string; n?: number }, fd: Form
     internal: true,
   });
   if (error) return { error: error.message };
+  if (fromClient) notifySoon();
 
   // Optional status change in the same step ("Comment and mark done").
   const nextStatus = str(fd, "then_status");

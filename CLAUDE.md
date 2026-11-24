@@ -13,8 +13,11 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   on the website or used as case studies. Keep the badge visible wherever a client is shown.
 - No secrets in the repo or in chat. Supabase publishable key + URL are public by design; anything else
   (service role key, Microsoft Graph secret, Anthropic key) goes in Vercel/Supabase/GitHub secrets.
-- The portal never emails clients. The only outgoing mail is internal (confirmations to the staff
-  member who forwarded an email), sent from the no-reply mailbox and checked against the staff list.
+- The portal never emails clients. The only outgoing mail is internal, sent from the no-reply mailbox
+  to active staff only: confirmations to whoever forwarded an email, and ticket notifications
+  (`src/lib/notify.ts`: assigned to you, client reply on your ticket). Triggers queue them in
+  `notifications`; `notifySoon()` sends after each action, the daily cron catches up. Each person picks
+  which kinds they get on their profile (`staff.notify_*`, new-ticket emails on by default).
 - Claude-assisted work must post drafts to the ticket for a person to approve. Nothing is sent to a
   client or published automatically.
 

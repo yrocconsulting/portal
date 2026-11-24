@@ -48,6 +48,12 @@ export async function processHelpdesk(): Promise<RunSummary> {
     // Mark read even after an error so one bad message can't block the queue; the error is kept in the log.
     await markRead(cfg, msg.id).catch((e) => summary.errors.push(`mark read: ${(e as Error).message}`));
   }
+  // Tell assignees about tickets and client replies that just came in.
+  if (summary.tickets || summary.comments) {
+    const { sendPendingNotifications } = await import("@/lib/notify");
+    const n = await sendPendingNotifications(db).catch((e) => ({ errors: [(e as Error).message] }));
+    summary.errors.push(...n.errors.map((e) => `notify: ${e}`));
+  }
   return summary;
 }
 

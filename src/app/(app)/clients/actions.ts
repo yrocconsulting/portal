@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth";
 import { cleanDomain, str } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { CLIENT_STATUSES, LINK_FIELDS } from "@/lib/types";
+import { notifySoon } from "@/lib/notify";
 
 type State = { error?: string; ok?: number };
 
@@ -122,6 +123,7 @@ export async function startOnboarding(_prev: State, fd: FormData): Promise<State
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("start_onboarding", { p_client: clientId, p_template: templateId, p_assignee: str(fd, "assignee_id") });
   if (error) return { error: error.message };
+  notifySoon();
   revalidatePath("/", "layout");
   return { ok: Number(data) || 0 };
 }

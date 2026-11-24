@@ -141,9 +141,11 @@ async function latestLink(email) {
 
   // Confirmations were emailed to the forwarder from no-reply.
   const st = await fetch(`${GRAPH}/__test/state`).then((r) => r.json());
-  ok(st.sent.length === 6, `6 confirmations sent (got ${st.sent.length})`);
+  const confirmations = st.sent.filter((m) => !/^(New ticket for you|Client reply on|\d+ new tickets?)/.test(m.subject));
+  ok(confirmations.length === 6, `6 confirmations sent (got ${confirmations.length})`);
+  ok(st.sent.some((m) => m.toRecipients[0].emailAddress.address === "member@yroc.test" && /new tickets? for you/i.test(m.subject) && m.body.content.includes("Photos ready")), "the client's lead is emailed about the new tickets (one email for the batch)");
   ok(st.sent.some((m) => /found by name in the email/.test(m.body.content) && /assigned to/.test(m.body.content)), "confirmation says the client was found by name and who it went to");
-  ok(st.sent.every((m) => m.from === "noreply@yroc.test"), "confirmations come from no-reply");
+  ok(st.sent.every((m) => m.from === "noreply@yroc.test"), "all mail comes from no-reply");
   ok(st.sent.some((m) => /No client matched someone@newprospect.com/.test(m.body.content)), "no-client confirmation explains next step");
   ok(st.messages.every((m) => m.isRead), "all messages marked read");
 

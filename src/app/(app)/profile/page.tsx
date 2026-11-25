@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   const me = await requireStaff();
   const urls = await avatarUrls([me.avatar_path]);
   const db = await createClient();
-  const { data: prefs } = await db.from("staff").select("notify_assigned, notify_client_reply").eq("id", me.id).single();
+  const { data: prefs } = await db.from("staff").select("notify_assigned, notify_client_reply, notify_new_review").eq("id", me.id).single();
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <div>

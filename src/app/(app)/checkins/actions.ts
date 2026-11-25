@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireStaff } from "@/lib/auth";
+import { todayCentral } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 const SNOOZE_DAYS = 3;
@@ -10,7 +11,8 @@ const SNOOZE_DAYS = 3;
 export async function answerCheckin(clientId: string, answer: "yes" | "no", viaNudge = true) {
   const me = await requireStaff();
   const supabase = await createClient();
-  const until = new Date(Date.now() + SNOOZE_DAYS * 86400000).toISOString().slice(0, 10);
+  // Central calendar days, like the rest of the reminders (UTC is already tomorrow in the evening).
+  const until = new Date(Date.parse(`${todayCentral()}T12:00:00Z`) + SNOOZE_DAYS * 86400000).toISOString().slice(0, 10);
   await supabase.from("client_touchpoints").insert({
     client_id: clientId,
     staff_id: me.id,

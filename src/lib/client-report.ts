@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { PR_ITEM_PATTERN } from "@/lib/press-release";
 import { itemDone } from "@/lib/report-progress";
-import { type Results } from "@/lib/reports";
+import { gbpPositive, type Results } from "@/lib/reports";
 import { supabaseUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -49,6 +49,14 @@ export type ClientSnapshot = {
   cited?: { url: string; platforms: string[]; built: boolean }[];
   media?: { kind: "ai" | "gsc" | "pr" | "other"; url: string; caption: string | null }[];
   pr?: { title: string; url: string | null }[];
+  gbp?: {
+    month: { views: number; calls: number; website_clicks: number; directions: number };
+    previous: { views: number; calls: number; website_clicks: number; directions: number } | null;
+    partial_days: number | null;
+    rating: number | null;
+    reviews: number;
+    new_reviews: number;
+  } | null;
 };
 
 export const newShareToken = () => randomBytes(24).toString("base64url");
@@ -136,6 +144,20 @@ export async function buildSnapshot(reportId: string): Promise<ClientSnapshot> {
     };
   }
 
+  // Google Business Profile (Maps): same rule as Search Console. Totals only, never review text or names.
+  const showGbp = r.gbp_display === "show" || (r.gbp_display !== "hide" && gbpPositive(results));
+  const gbp: ClientSnapshot["gbp"] =
+    results.gbp && showGbp
+      ? {
+          month: results.gbp.month,
+          previous: results.gbp.previous,
+          partial_days: results.gbp.partial_days ?? null,
+          rating: results.gbp.rating,
+          reviews: results.gbp.reviews,
+          new_reviews: results.gbp.new_reviews,
+        }
+      : null;
+
   // AI: prompts where most AI platforms recommend the client, with counts per platform.
   let ai: ClientSnapshot["ai"] = null;
   if (results.ai) {
@@ -206,5 +228,6 @@ export async function buildSnapshot(reportId: string): Promise<ClientSnapshot> {
     cited: [...cited.values()],
     media: (media ?? []).filter((m) => m.kind !== "gsc" || !!gsc).map((m) => ({ kind: m.kind as "ai" | "gsc" | "pr" | "other", url: mediaUrl(m.path), caption: m.caption })),
     pr,
+    gbp,
   };
 }

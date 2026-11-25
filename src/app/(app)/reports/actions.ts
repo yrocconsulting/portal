@@ -10,9 +10,9 @@ import { createClient } from "@/lib/supabase/server";
 
 async function refreshResults(reportId: string) {
   const supabase = await createClient();
-  const { data: r } = await supabase.from("monthly_reports").select("month, client:clients(domain, tracking_domain, gsc_site_url)").eq("id", reportId).single();
+  const { data: r } = await supabase.from("monthly_reports").select("month, client:clients(id, domain, tracking_domain, gsc_site_url)").eq("id", reportId).single();
   if (!r) return;
-  const client = r.client as unknown as { domain: string | null; tracking_domain: string | null; gsc_site_url: string | null };
+  const client = r.client as unknown as { id: string; domain: string | null; tracking_domain: string | null; gsc_site_url: string | null };
   const results = await computeResults(client, r.month as string);
   const now = new Date().toISOString();
   await supabase.from("monthly_reports").update({ results, results_at: now, content_changed_at: now }).eq("id", reportId);

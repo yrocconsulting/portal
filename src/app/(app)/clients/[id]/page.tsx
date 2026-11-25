@@ -15,6 +15,7 @@ import { ClientForm } from "../client-form";
 import { mediaUrl } from "@/lib/client-report";
 import { Branding } from "./branding";
 import { AiVisibility } from "@/components/ai-visibility";
+import { BusinessProfile } from "@/components/business-profile";
 import { SearchConsole } from "@/components/search-console";
 import { trackedDomain } from "@/lib/visibility";
 import { monthLabel } from "@/lib/reports";
@@ -137,6 +138,7 @@ export default async function ClientPage({ params, searchParams }: PageProps<"/c
           <AiVisibility domain={trackedDomain(c)} clientId={c.id} />
 
           <SearchConsole client={c} />
+          <BusinessProfile clientId={c.id} />
 
           {(details.length > 0 || c.website || c.drive_url || links.length > 0) && (
             <section className="card p-4">

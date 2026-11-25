@@ -32,6 +32,14 @@ marketing site (`yrocconsulting/staging`). Users: internal staff (1 to 5 people)
   `/api/cron/daily`, and the Search Console sync (`src/lib/gsc/`, also run by admins via Sync now).
 - Google Search Console: service account JWT auth in `src/lib/gsc/google.ts` (no Google SDK),
   stored per property in `gsc_*` tables and matched to clients via `gsc_site_url ?? domain`.
+- Google Business Profile (`src/lib/gbp/`, `/business-profiles`): one OAuth connection to the agency's
+  @gmail.com manager account (admin clicks Connect; refresh token encrypted with `CREDENTIALS_KEY` in
+  app_settings `gbp_oauth`; env GOOGLE_OAUTH_CLIENT_ID/SECRET). Synced daily by the cron and by Sync now:
+  daily numbers, monthly search terms and reviews into `gbp_*`. Profiles match clients by website domain
+  unless an admin picks one. New reviews (not on the first import) email the client's account manager and
+  lead. Client reports show totals only (`gbp_display`, auto = when it's up), never review text or names.
+  Needs Google's API access approval (quota is 0 until then). Tests: `tests/mock-gbp.cjs` (port 4040,
+  GBP_API_BASE / GBP_AUTH_URL / GBP_TOKEN_URL) and `tests/e2e-gbp.cjs`.
 - AI visibility: the website repo's Monday `ai-stats` job posts full ProRankTracker results to
   `/api/prt/ingest` (secret `PRT_INGEST_SECRET` here, `PORTAL_INGEST_SECRET` there). Results are stored
   by domain and joined to clients via `tracking_domain ?? domain` at read time.

@@ -62,7 +62,7 @@ export async function saveStaffProfile(_prev: ProfileState, fd: FormData): Promi
 /** Turns one kind of ticket email on or off for the signed-in person. */
 export async function setMyNotification(kind: string, on: boolean): Promise<{ error?: string }> {
   await requireStaff();
-  if (kind !== "assigned" && kind !== "client_reply") return { error: "Unknown email type." };
+  if (!["assigned", "client_reply", "new_review"].includes(kind)) return { error: "Unknown email type." };
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_my_notification", { p_kind: kind, p_on: on });
   return error ? { error: error.message } : {};

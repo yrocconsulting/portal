@@ -260,6 +260,7 @@ const CSS = `
 .cr .win i{flex:0 0 auto;width:28px;height:28px;border-radius:8px;background:var(--soft);color:var(--ink);display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700}
 .cr .gstats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
 @media(max-width:620px){.cr .gstats{grid-template-columns:1fr}}
+.cr .gstats.four{grid-template-columns:repeat(4,1fr)}@media(max-width:900px){.cr .gstats.four{grid-template-columns:repeat(2,1fr)}}
 .cr .gstat .n{font-family:var(--disp);font-weight:700;font-size:2.4rem;line-height:1}
 .cr .gstat .l{color:var(--muted);font-size:.86rem;margin-top:6px}
 .cr .cr-chg{display:inline-block;margin-top:8px;font-size:.78rem;font-weight:600;border-radius:99px;padding:2px 9px;background:var(--surface-2);color:var(--muted)}
@@ -294,6 +295,7 @@ export function ClientReport({ snap, preview = false }: { snap: ClientSnapshot; 
   const c = palette(snap);
   const ai = snap.ai;
   const g = snap.gsc;
+  const b = snap.gbp;
   const media = snap.media ?? [];
   const wins = lines(snap.headline);
   const next = lines(snap.next);
@@ -312,6 +314,7 @@ export function ClientReport({ snap, preview = false }: { snap: ClientSnapshot; 
     if (engines.length) kpis.push({ n: String(engines.length), l: `AI engines featuring ${snap.client}` });
   }
   if (g && kpis.length < 4) kpis.push({ n: n(g.month.clicks), l: "Clicks from Google Search" });
+  if (b && b.month.calls > 0 && kpis.length < 4) kpis.push({ n: n(b.month.calls), l: "Calls from Google Maps" });
   if (snap.actions.length && kpis.length < 4) kpis.push({ n: String(snap.actions.length), l: "Search growth actions delivered" });
   if (snap.leads !== null && snap.leads !== undefined && kpis.length < 4) kpis.push({ n: n(snap.leads), l: "Leads from search" });
 
@@ -524,6 +527,41 @@ export function ClientReport({ snap, preview = false }: { snap: ClientSnapshot; 
             </div>
             <ClicksChart snap={snap} color={c.accent} />
             <Shots items={media.filter((m) => m.kind === "gsc")} />
+          </div>
+        </section>
+      )}
+
+      {b && (
+        <section className="band" data-gbp>
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="eyebrow">Google Maps &amp; Business Profile</span>
+            </div>
+            <h2 className="big">
+              {b.previous && b.month.calls + b.month.website_clicks + b.month.directions > b.previous.calls + b.previous.website_clicks + b.previous.directions
+                ? "More customers are reaching out from Google Maps."
+                : "How customers found you on Google Maps."}
+            </h2>
+            <p className="sec-sub">
+              {b.partial_days ? `Month in progress: compared with the same ${b.partial_days} days of last month. ` : ""}
+              {b.rating ? `${b.rating.toFixed(1)} stars from ${n(b.reviews)} Google reviews${b.new_reviews ? `, ${n(b.new_reviews)} new this month` : ""}.` : ""}
+            </p>
+            <div className="gstats four">
+              {(
+                [
+                  ["calls", "Calls from your profile"],
+                  ["website_clicks", "Website visits from your profile"],
+                  ["directions", "Direction requests"],
+                  ["views", "Times your profile was viewed"],
+                ] as const
+              ).map(([k, label]) => (
+                <div key={k} className="card gstat">
+                  <div className="n tnum">{n(b.month[k])}</div>
+                  <div className="l">{label}</div>
+                  <Change now={b.month[k]} before={b.previous?.[k]} />
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}

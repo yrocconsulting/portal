@@ -19,7 +19,8 @@ function Delta({ now, before, lowerIsBetter = false, fmt = n }: { now: number; b
 export function ResultsCard({ results, at }: { results: Results; at: string | null }) {
   const g = results.gsc;
   const a = results.ai;
-  if (!g && !a) {
+  const b = results.gbp;
+  if (!g && !a && !b) {
     return (
       <p className="text-sm text-muted">
         No Google Search or AI visibility data for this client and month. Connect their Search Console property or tracked domain, then refresh.
@@ -41,6 +42,13 @@ export function ResultsCard({ results, at }: { results: Results; at: string | nu
     tiles.push({ label: "AI appearances", value: n(a.appearances), sub: <span className="text-xs text-muted">{a.mentions} mentions, {a.links} citations</span> });
     tiles.push({ label: "Prompts won", value: `${a.strong_prompts} of ${a.prompts}`, sub: <span className="text-xs text-muted">75%+ of AI platforms</span> });
   }
+  if (b) {
+    tiles.push({ label: "Maps calls", value: n(b.month.calls), sub: <Delta now={b.month.calls} before={b.previous?.calls} /> });
+    tiles.push({ label: "Profile website clicks", value: n(b.month.website_clicks), sub: <Delta now={b.month.website_clicks} before={b.previous?.website_clicks} /> });
+    tiles.push({ label: "Directions", value: n(b.month.directions), sub: <Delta now={b.month.directions} before={b.previous?.directions} /> });
+    tiles.push({ label: "Profile views", value: n(b.month.views), sub: <Delta now={b.month.views} before={b.previous?.views} /> });
+    tiles.push({ label: "Google rating", value: b.rating ? b.rating.toFixed(1) : "none", sub: <span className="text-xs text-muted">{n(b.reviews)} reviews, {b.new_reviews} new</span> });
+  }
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
@@ -60,6 +68,7 @@ export function ResultsCard({ results, at }: { results: Results; at: string | nu
           </>
         )}
         {a && <>AI visibility: {a.domain}. </>}
+        {b && <>Business Profile: data through {fmtDate(b.through)}. </>}
         {at && <>Saved {fmtDate(at)}.</>}
       </p>
     </div>

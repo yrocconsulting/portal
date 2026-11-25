@@ -6,7 +6,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { requireStaff, staffName } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
 import { progress } from "@/lib/report-progress";
-import { monthLabel, type Results } from "@/lib/reports";
+import { gbpPositive, monthLabel, type Results } from "@/lib/reports";
 import { createClient } from "@/lib/supabase/server";
 import { deleteReport } from "../actions";
 import { ResultsCard } from "../results-card";
@@ -116,6 +116,9 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
         gscDisplay={r.gsc_display ?? "auto"}
         gscAuto={gscPositive((r.results ?? {}) as Results)}
         hasGsc={!!((r.results ?? {}) as Results).gsc}
+        gbpDisplay={r.gbp_display ?? "auto"}
+        gbpAuto={gbpPositive((r.results ?? {}) as Results)}
+        hasGbp={!!((r.results ?? {}) as Results).gbp}
         media={(media ?? []).map((m) => ({ id: m.id, kind: m.kind, caption: m.caption, url: mediaUrl(m.path), read_at: m.read_at, read_note: m.read_note }))}
         quotes={(quotes ?? []) as DesignQuote[]}
         clientName={client.name}

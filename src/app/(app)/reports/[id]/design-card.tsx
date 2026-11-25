@@ -89,6 +89,9 @@ export function DesignCard({
   gscDisplay,
   gscAuto,
   hasGsc,
+  gbpDisplay,
+  gbpAuto,
+  hasGbp,
   media,
   quotes,
   clientName,
@@ -100,12 +103,16 @@ export function DesignCard({
   gscDisplay: string;
   gscAuto: boolean;
   hasGsc: boolean;
+  gbpDisplay: string;
+  gbpAuto: boolean;
+  hasGbp: boolean;
   media: DesignMedia[];
   quotes: DesignQuote[];
   clientName: string;
 }) {
   const [title, setTitle] = useState(heroTitle);
   const [gsc, setGsc] = useState(gscDisplay);
+  const [gbp, setGbp] = useState(gbpDisplay);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok?: string; error?: string } | null>(null);
 
@@ -122,6 +129,7 @@ export function DesignCard({
   const [pulling, startPull] = useTransition();
 
   const showing = gsc === "show" || (gsc === "auto" && gscAuto);
+  const showingGbp = gbp === "show" || (gbp === "auto" && gbpAuto);
 
   async function upload(list: FileList | File[] | null) {
     if (!list?.length) return;
@@ -190,7 +198,7 @@ export function DesignCard({
         </span>
       </summary>
       <div className="space-y-6 p-4">
-        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_230px_230px]">
           <div>
             <label className="label" htmlFor="hero_title">
               Headline
@@ -223,6 +231,19 @@ export function DesignCard({
               {!hasGsc ? "No Search Console data for this month." : showing ? "Showing on the report." : "Hidden: clicks and impressions aren't up this month."}
             </p>
           </div>
+          <div>
+            <label className="label" htmlFor="gbp_display">
+              Google Business Profile section
+            </label>
+            <select id="gbp_display" value={gbp} disabled={readOnly || !hasGbp} onChange={(e) => setGbp(e.target.value)} className="field">
+              <option value="auto">Automatic (only when it&apos;s up)</option>
+              <option value="show">Always show</option>
+              <option value="hide">Hide</option>
+            </select>
+            <p className="mt-1 text-xs text-muted">
+              {!hasGbp ? "No Business Profile data for this month." : showingGbp ? "Showing on the report." : "Hidden: calls, clicks, directions and views aren't up this month."}
+            </p>
+          </div>
         </div>
         {!readOnly && (
           <div className="flex items-center justify-end gap-3">
@@ -232,7 +253,7 @@ export function DesignCard({
               disabled={pending}
               onClick={() =>
                 start(async () => {
-                  const r = await saveDesign(reportId, { hero_title: title, gsc_display: gsc });
+                  const r = await saveDesign(reportId, { hero_title: title, gsc_display: gsc, gbp_display: gbp });
                   setMsg(r.error ? { error: r.error } : { ok: "Saved." });
                 })
               }

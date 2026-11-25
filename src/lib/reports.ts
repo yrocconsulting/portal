@@ -8,7 +8,18 @@ export type Results = {
   // partial_days: when the month isn't over yet, the comparison uses the same days of the previous month.
   gsc?: { site: string; month: GscMonth; previous: GscMonth | null; through?: string; partial_days?: number };
   ai?: { domain: string; report_date: string; visibility: number; appearances: number; mentions: number; links: number; prompts: number; strong_prompts: number };
+  gbp?: { month: GbpMonth; previous: GbpMonth | null; through: string; partial_days?: number; rating: number | null; reviews: number; new_reviews: number };
 };
+
+export type GbpMonth = { views: number; calls: number; website_clicks: number; directions: number };
+
+/** Business Profile shows on the client report when the team says so, or (auto) when calls, clicks, directions or views went up. */
+export function gbpPositive(r: Results): boolean {
+  const g = r.gbp;
+  if (!g?.previous) return false;
+  const actions = (m: GbpMonth) => m.calls + m.website_clicks + m.directions;
+  return actions(g.month) > actions(g.previous) || g.month.views > g.previous.views;
+}
 
 export const monthStart = (ym: string) => `${ym.slice(0, 7)}-01`;
 export const monthEnd = (ym: string) => {
@@ -37,7 +48,7 @@ function sumDays(days: { clicks: number; impressions: number; position: number }
 
 /** That month's Google Search totals (vs the month before) and the latest AI visibility report in the month. */
 export async function computeResults(
-  client: { domain: string | null; tracking_domain: string | null; gsc_site_url: string | null },
+  client: { id?: string; domain: string | null; tracking_domain: string | null; gsc_site_url: string | null },
   month: string,
 ): Promise<Results> {
   const supabase = await createClient();
@@ -58,6 +69,44 @@ export async function computeResults(
       // Compare like with like: a month in progress against the same days of the previous month.
       const prev = (days ?? []).filter((d) => d.date < start && (partial === undefined || Number(d.date.slice(8, 10)) <= partial));
       out.gsc = { site, month: sumDays(cur), previous: prev.length ? sumDays(prev) : null, through, partial_days: partial };
+    }
+  }
+
+  // Google Business Profile: all of the client's locations together.
+  if (client.id) {
+    const { data: locs } = await supabase.from("gbp_locations").select("name, average_rating, review_count").eq("client_id", client.id);
+    if (locs?.length) {
+      const names = locs.map((l) => l.name);
+      const pStart = monthStart(prevMonth(month));
+      const [{ data: days }, { count: newReviews }] = await Promise.all([
+        supabase.from("gbp_daily").select("date, views_search, views_maps, calls, website_clicks, directions").in("location", names).gte("date", pStart).lte("date", end),
+        supabase.from("gbp_reviews").select("name", { count: "exact", head: true }).in("location", names).gte("created_at", start).lte("created_at", `${end}T23:59:59Z`),
+      ]);
+      const sum = (rows: NonNullable<typeof days>): GbpMonth =>
+        rows.reduce((a, d) => ({ views: a.views + d.views_search + d.views_maps, calls: a.calls + d.calls, website_clicks: a.website_clicks + d.website_clicks, directions: a.directions + d.directions }), {
+          views: 0,
+          calls: 0,
+          website_clicks: 0,
+          directions: 0,
+        });
+      const cur = (days ?? []).filter((d) => d.date >= start);
+      if (cur.length) {
+        const through = cur.map((d) => d.date).sort().at(-1)!;
+        const partial = through < end ? Number(through.slice(8, 10)) : undefined;
+        const prev = (days ?? []).filter((d) => d.date < start && (partial === undefined || Number(d.date.slice(8, 10)) <= partial));
+        const reviews = locs.reduce((a, l) => a + (l.review_count ?? 0), 0);
+        const rated = locs.filter((l) => l.average_rating !== null);
+        const weight = rated.reduce((a, l) => a + (l.review_count ?? 1), 0);
+        out.gbp = {
+          month: sum(cur),
+          previous: prev.length ? sum(prev) : null,
+          through,
+          partial_days: partial,
+          rating: weight ? Math.round((rated.reduce((a, l) => a + Number(l.average_rating) * (l.review_count ?? 1), 0) / weight) * 10) / 10 : null,
+          reviews,
+          new_reviews: newReviews ?? 0,
+        };
+      }
     }
   }
 

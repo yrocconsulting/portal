@@ -22,14 +22,15 @@ const done = (reportId: string): Res => {
   return { ok: Date.now() };
 };
 
-export async function saveDesign(reportId: string, input: { hero_title: string; gsc_display: string }): Promise<Res> {
+export async function saveDesign(reportId: string, input: { hero_title: string; gsc_display: string; gbp_display?: string }): Promise<Res> {
   await requireStaff();
   const { db, error } = await editable(reportId);
   if (error) return { error };
   const gsc_display = ["auto", "show", "hide"].includes(input.gsc_display) ? input.gsc_display : "auto";
+  const gbp_display = ["auto", "show", "hide"].includes(input.gbp_display ?? "") ? input.gbp_display : "auto";
   const { error: e } = await db
     .from("monthly_reports")
-    .update({ hero_title: input.hero_title.trim().replace(/\s*\u2014\s*/g, ", ").slice(0, 200) || null, gsc_display, content_changed_at: new Date().toISOString() })
+    .update({ hero_title: input.hero_title.trim().replace(/\s*\u2014\s*/g, ", ").slice(0, 200) || null, gsc_display, gbp_display, content_changed_at: new Date().toISOString() })
     .eq("id", reportId);
   return e ? { error: e.message } : done(reportId);
 }
